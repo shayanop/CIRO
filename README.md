@@ -247,7 +247,7 @@ GEMINI_API_KEY=<your-gemini-api-key>
 | **Anas Bin Rashid** | Lead Engineer – Antigravity & Signal Ingestion |
 | **Hasnain Akhtar** | AI Engineer – Event Detection & Maps |
 | **Arshman Khawar** | Backend Dev – Reasoning & Simulation |
-| **Saad Mursaleen** | Mobile Dev – Flutter App & UX |
+| **M Saad Mursaleen** | Mobile Dev – Flutter App & UX |
 | **Shayan Ahmed** | Systems Dev – Logging, Docs & Demo |
 
 ---
