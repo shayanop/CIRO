@@ -1,4 +1,4 @@
-# 🚨 CIRO – Crisis Intelligence & Response Orchestrator
+# CIRO – Crisis Intelligence & Response Orchestrator
 
 > **An Agentic AI System for real-time urban crisis detection, reasoning, and coordinated response — powered by Google Antigravity & Gemini.**
 
@@ -10,7 +10,7 @@
 
 ---
 
-## 📖 Overview
+## Overview
 
 Pakistan's cities face recurring urban crises — flash floods in G-10, heatwaves in Jacobabad, road blockages on Shahrah-e-Faisal, infrastructure failures on Constitution Avenue. Current response systems are fragmented and reactive.
 
@@ -25,7 +25,7 @@ All orchestrated through **Google Antigravity** — no manual API chaining requi
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -45,7 +45,7 @@ All orchestrated through **Google Antigravity** — no manual API chaining requi
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 | Layer | Technologies |
 |---|---|
@@ -60,7 +60,7 @@ All orchestrated through **Google Antigravity** — no manual API chaining requi
 
 ---
 
-## 🤖 Agent Pipeline
+## Agent Pipeline
 
 ### 1. Signal Ingestion Agent
 - Ingests raw signals from social media, weather APIs, and traffic feeds
@@ -93,7 +93,7 @@ All orchestrated through **Google Antigravity** — no manual API chaining requi
 
 ---
 
-## 🔌 Google Antigravity Integration
+## Google Antigravity Integration
 
 > **Antigravity accounts for 25% of the evaluation score.**
 
@@ -117,7 +117,7 @@ All orchestrated through **Google Antigravity** — no manual API chaining requi
 
 ---
 
-## 📱 Mobile App (Flutter)
+## Mobile App (Flutter)
 
 The Flutter app provides 5 screens:
 
@@ -131,7 +131,7 @@ The Flutter app provides 5 screens:
 
 ---
 
-## 🌐 Web Dashboard
+## Web Dashboard
 
 A real-time 2×2 panel web dashboard:
 - **Live Signal Feed** — auto-polls social signals every 4 seconds
@@ -143,7 +143,7 @@ Includes a **"TRIGGER PIPELINE"** button and **"Reset System"** button for demo 
 
 ---
 
-## 📡 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Purpose |
 |---|---|---|
@@ -168,7 +168,7 @@ Includes a **"TRIGGER PIPELINE"** button and **"Reset System"** button for demo 
 
 ---
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### Backend
 ```bash
@@ -201,7 +201,7 @@ GEMINI_API_KEY=<your-gemini-api-key>
 
 ---
 
-## 🧪 Demo Scenarios
+## Demo Scenarios
 
 | # | Scenario | Input | Expected Output |
 |---|---|---|---|
@@ -213,7 +213,7 @@ GEMINI_API_KEY=<your-gemini-api-key>
 
 ---
 
-## 📊 Key Success Metrics
+## Key Success Metrics
 
 | # | Metric | Target |
 |---|---|---|
@@ -230,7 +230,7 @@ GEMINI_API_KEY=<your-gemini-api-key>
 
 ---
 
-## ⚠️ Assumptions
+## Assumptions
 
 - All weather, traffic, and social media data is **simulated/mock** for the hackathon scope.
 - Google Maps API calls use **pre-saved GeoJSON** to avoid quota issues.
@@ -240,19 +240,19 @@ GEMINI_API_KEY=<your-gemini-api-key>
 
 ---
 
-## 👥 Team
+## Team
 
 | Name | Role |
 |---|---|
-| **Anas** | Lead Engineer – Antigravity & Signal Ingestion |
-| **Hasnain** | AI Engineer – Event Detection & Maps |
-| **Arshman** | Backend Dev – Reasoning & Simulation |
-| **Saad** | Mobile Dev – Flutter App & UX |
-| **Shayan** | Systems Dev – Logging, Docs & Demo |
+| **Anas Bin Rashid** | Lead Engineer – Antigravity & Signal Ingestion |
+| **Hasnain Akhtar** | AI Engineer – Event Detection & Maps |
+| **Arshman Khawar** | Backend Dev – Reasoning & Simulation |
+| **Saad Mursaleen** | Mobile Dev – Flutter App & UX |
+| **Shayan Ahmed** | Systems Dev – Logging, Docs & Demo |
 
 ---
 
-## 📄 Documentation
+## Documentation
 
 - [`Plans/CIRO_Implementation_Plan_5_Days.md`](Plans/CIRO_Implementation_Plan_5_Days.md) – 5-Day Sprint Plan
 - `docs/ARCHITECTURE.md` – System Architecture
