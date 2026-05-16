@@ -17,3 +17,6 @@ __pycache__/
 .DS_Store
 Thumbs.db
 __pycache__/
+
+
+.venv/

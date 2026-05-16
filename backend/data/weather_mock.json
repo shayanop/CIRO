@@ -11,23 +11,132 @@
     "pressure": 1005,
     "humidity": 85
   },
-  "wind": {"speed": 7.2, "deg": 180},
-  "rain": {"1h": 42.5, "3h": 78.0},
+  "wind": {"speed": 7.2, "deg": 180, "gust": 12.5},
+  "rain": {"1h": 42.5, "3h": 78.0, "24h": 156.0},
+  "clouds": {"all": 95},
+  "visibility": 3200,
+  "uv_index": 9.4,
+  "air_quality": {"aqi": 178, "pm2_5": 122.4, "pm10": 198.7, "category": "unhealthy"},
   "alerts": [
     {
+      "alert_id": "alt_001",
       "sender_name": "Pakistan Meteorological Department",
       "event": "Heavy Rainfall Warning",
+      "severity": "high",
       "start": "2025-05-17T06:00:00Z",
       "end": "2025-05-17T18:00:00Z",
-      "description": "Heavy rainfall expected in Islamabad and Rawalpindi. Flash flooding possible in low-lying areas including G-10, I-8, and E-11 sectors."
+      "regions": ["Islamabad", "Rawalpindi"],
+      "description": "Heavy rainfall expected in Islamabad and Rawalpindi. Flash flooding possible in low-lying areas including G-10, I-8, E-11, F-6, and F-10 sectors. Residents advised to avoid travel."
     },
     {
+      "alert_id": "alt_002",
       "sender_name": "Pakistan Meteorological Department",
       "event": "Extreme Heat Advisory",
+      "severity": "critical",
       "start": "2025-05-17T10:00:00Z",
       "end": "2025-05-17T17:00:00Z",
-      "description": "Temperature expected to reach 48°C in Jacobabad and 45°C in Karachi. Heatstroke risk is extreme. Avoid outdoor activity."
+      "regions": ["Jacobabad", "Karachi", "Multan", "Bahawalpur", "Sukkur"],
+      "description": "Temperature expected to reach 48°C in Jacobabad, 49°C in Bahawalpur, and 45°C in Karachi. Heatstroke risk is extreme. Avoid outdoor activity between 11 AM and 4 PM."
+    },
+    {
+      "alert_id": "alt_003",
+      "sender_name": "PMD Coastal Division",
+      "event": "Cyclone Warning",
+      "severity": "critical",
+      "start": "2025-05-17T16:00:00Z",
+      "end": "2025-05-19T06:00:00Z",
+      "regions": ["Karachi", "Thatta", "Badin", "Gwadar"],
+      "description": "Tropical cyclone forming in Arabian Sea, expected landfall near Karachi within 36 hours. Wind speeds up to 140 km/h. Fishermen advised not to venture into sea."
+    },
+    {
+      "alert_id": "alt_004",
+      "sender_name": "PMD Northern Areas",
+      "event": "Landslide Warning",
+      "severity": "high",
+      "start": "2025-05-17T08:00:00Z",
+      "end": "2025-05-18T20:00:00Z",
+      "regions": ["Murree", "Naran", "Kaghan", "Chitral", "Hunza"],
+      "description": "Continued rainfall increasing landslide risk in mountainous northern areas. Travellers on N-35 and Karakoram Highway should expect delays."
+    },
+    {
+      "alert_id": "alt_005",
+      "sender_name": "PMD Sindh Division",
+      "event": "Dust Storm Advisory",
+      "severity": "medium",
+      "start": "2025-05-17T14:00:00Z",
+      "end": "2025-05-17T20:00:00Z",
+      "regions": ["Thar", "Mirpur Khas", "Umerkot"],
+      "description": "Severe dust storm reducing visibility to under 100 metres in Thar Desert region. Highway travel hazardous."
+    },
+    {
+      "alert_id": "alt_006",
+      "sender_name": "PMD Punjab",
+      "event": "Smog and Air Quality Alert",
+      "severity": "high",
+      "start": "2025-05-17T05:00:00Z",
+      "end": "2025-05-17T22:00:00Z",
+      "regions": ["Lahore", "Kasur", "Sheikhupura", "Faisalabad"],
+      "description": "AQI exceeding 400 in Lahore and surrounding areas. Schools closed. Outdoor exercise not recommended."
+    },
+    {
+      "alert_id": "alt_007",
+      "sender_name": "PMD Balochistan",
+      "event": "Heavy Snowfall Warning",
+      "severity": "medium",
+      "start": "2025-05-17T03:00:00Z",
+      "end": "2025-05-17T15:00:00Z",
+      "regions": ["Quetta", "Ziarat", "Kalat"],
+      "description": "Unseasonal heavy snowfall blocking N-25 highway. Stranded travellers being assisted by NHA."
+    },
+    {
+      "alert_id": "alt_008",
+      "sender_name": "PMD Hailstorm Bureau",
+      "event": "Hailstorm Alert",
+      "severity": "medium",
+      "start": "2025-05-17T16:30:00Z",
+      "end": "2025-05-17T19:00:00Z",
+      "regions": ["Islamabad", "Rawalpindi", "Attock"],
+      "description": "Hailstorm with golf-ball-sized hail expected. Vehicle damage likely. Park under shelter where possible."
     }
+  ],
+  "regional_forecast": [
+    {"city": "Islamabad", "temp": 28.4, "condition": "Heavy Rain", "humidity": 89, "wind_kph": 22, "rain_mm": 42.5, "alert_level": "high"},
+    {"city": "Rawalpindi", "temp": 29.1, "condition": "Heavy Rain", "humidity": 87, "wind_kph": 19, "rain_mm": 38.2, "alert_level": "high"},
+    {"city": "Lahore", "temp": 41.3, "condition": "Hot, Smog", "humidity": 32, "wind_kph": 8, "rain_mm": 0, "alert_level": "high"},
+    {"city": "Karachi", "temp": 39.8, "condition": "Humid, Cyclone Forming", "humidity": 78, "wind_kph": 35, "rain_mm": 2.1, "alert_level": "critical"},
+    {"city": "Jacobabad", "temp": 48.6, "condition": "Extreme Heat", "humidity": 18, "wind_kph": 5, "rain_mm": 0, "alert_level": "critical"},
+    {"city": "Multan", "temp": 46.2, "condition": "Extreme Heat", "humidity": 22, "wind_kph": 7, "rain_mm": 0, "alert_level": "high"},
+    {"city": "Bahawalpur", "temp": 49.1, "condition": "Extreme Heat", "humidity": 15, "wind_kph": 4, "rain_mm": 0, "alert_level": "critical"},
+    {"city": "Peshawar", "temp": 37.5, "condition": "Sunny", "humidity": 42, "wind_kph": 11, "rain_mm": 0, "alert_level": "medium"},
+    {"city": "Quetta", "temp": 4.2, "condition": "Snowfall", "humidity": 94, "wind_kph": 28, "rain_mm": 0, "snow_cm": 18, "alert_level": "medium"},
+    {"city": "Murree", "temp": 12.6, "condition": "Heavy Rain, Landslide Risk", "humidity": 96, "wind_kph": 24, "rain_mm": 67.3, "alert_level": "high"},
+    {"city": "Faisalabad", "temp": 42.7, "condition": "Hot, Smog", "humidity": 28, "wind_kph": 9, "rain_mm": 0, "alert_level": "high"},
+    {"city": "Sukkur", "temp": 45.4, "condition": "Hot, River Level Rising", "humidity": 35, "wind_kph": 12, "rain_mm": 5.6, "alert_level": "high"},
+    {"city": "Hyderabad", "temp": 41.2, "condition": "Hot, Humid", "humidity": 65, "wind_kph": 18, "rain_mm": 0.8, "alert_level": "medium"},
+    {"city": "Gwadar", "temp": 33.5, "condition": "Cyclone Approaching", "humidity": 82, "wind_kph": 56, "rain_mm": 12.4, "alert_level": "critical"},
+    {"city": "Sialkot", "temp": 38.6, "condition": "Partly Cloudy", "humidity": 54, "wind_kph": 13, "rain_mm": 3.2, "alert_level": "low"},
+    {"city": "Gujranwala", "temp": 40.1, "condition": "Hot", "humidity": 38, "wind_kph": 10, "rain_mm": 0, "alert_level": "medium"},
+    {"city": "Abbottabad", "temp": 22.3, "condition": "Rain, Foggy", "humidity": 92, "wind_kph": 14, "rain_mm": 28.7, "alert_level": "high"},
+    {"city": "Chitral", "temp": 16.4, "condition": "Heavy Rain, Flash Flood Risk", "humidity": 95, "wind_kph": 18, "rain_mm": 54.2, "alert_level": "critical"},
+    {"city": "Mardan", "temp": 35.8, "condition": "Flooding Reported", "humidity": 78, "wind_kph": 15, "rain_mm": 31.5, "alert_level": "high"},
+    {"city": "Nowshera", "temp": 36.2, "condition": "River Overflow Warning", "humidity": 76, "wind_kph": 12, "rain_mm": 18.9, "alert_level": "high"}
+  ],
+  "hourly_forecast": [
+    {"time": "2025-05-17T06:00:00Z", "temp": 26.8, "condition": "Heavy Rain", "rain_mm": 12.4, "wind_kph": 18},
+    {"time": "2025-05-17T09:00:00Z", "temp": 27.9, "condition": "Heavy Rain", "rain_mm": 15.7, "wind_kph": 21},
+    {"time": "2025-05-17T12:00:00Z", "temp": 29.4, "condition": "Thunderstorms", "rain_mm": 23.5, "wind_kph": 28},
+    {"time": "2025-05-17T15:00:00Z", "temp": 28.1, "condition": "Heavy Rain", "rain_mm": 18.9, "wind_kph": 24},
+    {"time": "2025-05-17T18:00:00Z", "temp": 26.3, "condition": "Moderate Rain", "rain_mm": 8.4, "wind_kph": 16},
+    {"time": "2025-05-17T21:00:00Z", "temp": 24.7, "condition": "Light Rain", "rain_mm": 3.2, "wind_kph": 11},
+    {"time": "2025-05-18T00:00:00Z", "temp": 23.5, "condition": "Cloudy", "rain_mm": 0.5, "wind_kph": 8}
+  ],
+  "river_levels": [
+    {"river": "Indus", "station": "Tarbela", "current_level_ft": 1542, "danger_level_ft": 1550, "trend": "rising", "status": "warning"},
+    {"river": "Indus", "station": "Sukkur Barrage", "current_level_ft": 196, "danger_level_ft": 195, "trend": "rising", "status": "exceeded"},
+    {"river": "Jhelum", "station": "Mangla", "current_level_ft": 1218, "danger_level_ft": 1225, "trend": "rising", "status": "warning"},
+    {"river": "Chenab", "station": "Marala", "current_level_ft": 800, "danger_level_ft": 810, "trend": "stable", "status": "normal"},
+    {"river": "Ravi", "station": "Balloki", "current_level_ft": 612, "danger_level_ft": 620, "trend": "rising", "status": "warning"},
+    {"river": "Kabul", "station": "Nowshera", "current_level_ft": 285, "danger_level_ft": 280, "trend": "rising", "status": "exceeded"}
   ],
   "name": "Islamabad",
   "dt": 1684320000
