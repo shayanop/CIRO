@@ -1,4 +1,4 @@
-# CIRO – Agent Design
+ # CIRO – Agent Design
 
 This document is the contract for each of the five agents in the CIRO pipeline. For every agent it specifies: input schema, output schema, tools used, decision logic, and how handoff to the next agent occurs.
 
