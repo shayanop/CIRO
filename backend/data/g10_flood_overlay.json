@@ -1,0 +1,36 @@
+{
+  "location": "G-10",
+  "crisis_pin": { "lat": 33.6844, "lng": 73.0479 },
+  "affected_polygon": [
+    { "lat": 33.6910, "lng": 73.0400 },
+    { "lat": 33.6910, "lng": 73.0560 },
+    { "lat": 33.6780, "lng": 73.0560 },
+    { "lat": 33.6780, "lng": 73.0400 },
+    { "lat": 33.6910, "lng": 73.0400 }
+  ],
+  "primary_route": {
+    "name": "Kashmir Highway",
+    "polyline": [
+      { "lat": 33.6980, "lng": 73.0350 },
+      { "lat": 33.6920, "lng": 73.0400 },
+      { "lat": 33.6844, "lng": 73.0479 },
+      { "lat": 33.6760, "lng": 73.0560 },
+      { "lat": 33.6700, "lng": 73.0620 }
+    ],
+    "status": "BLOCKED",
+    "color": "#f85149"
+  },
+  "alternate_route": {
+    "name": "Margalla Road",
+    "polyline": [
+      { "lat": 33.6980, "lng": 73.0350 },
+      { "lat": 33.7020, "lng": 73.0390 },
+      { "lat": 33.7060, "lng": 73.0480 },
+      { "lat": 33.7040, "lng": 73.0580 },
+      { "lat": 33.6970, "lng": 73.0650 },
+      { "lat": 33.6700, "lng": 73.0620 }
+    ],
+    "status": "ACTIVE",
+    "color": "#3fb950"
+  }
+}

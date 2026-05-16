@@ -1,0 +1,67 @@
+[
+  {
+    "route_id": "rt_001",
+    "name": "Margalla Road",
+    "city": "Islamabad",
+    "polyline": [
+      { "lat": 33.6980, "lng": 73.0350 },
+      { "lat": 33.7020, "lng": 73.0480 },
+      { "lat": 33.7060, "lng": 73.0620 }
+    ],
+    "normal_time_min": 12,
+    "status": "ACTIVE",
+    "bypasses": "Kashmir Highway"
+  },
+  {
+    "route_id": "rt_002",
+    "name": "IJP Road via G-11",
+    "city": "Islamabad",
+    "polyline": [
+      { "lat": 33.6700, "lng": 73.0100 },
+      { "lat": 33.6750, "lng": 73.0280 },
+      { "lat": 33.6820, "lng": 73.0480 }
+    ],
+    "normal_time_min": 18,
+    "status": "ACTIVE",
+    "bypasses": "G-10 to Blue Area"
+  },
+  {
+    "route_id": "rt_003",
+    "name": "Constitution Avenue Bypass",
+    "city": "Islamabad",
+    "polyline": [
+      { "lat": 33.7280, "lng": 73.0900 },
+      { "lat": 33.7200, "lng": 73.0820 },
+      { "lat": 33.7100, "lng": 73.0750 }
+    ],
+    "normal_time_min": 10,
+    "status": "ACTIVE",
+    "bypasses": "Srinagar Highway"
+  },
+  {
+    "route_id": "rt_004",
+    "name": "M.A. Jinnah Road",
+    "city": "Karachi",
+    "polyline": [
+      { "lat": 24.8700, "lng": 66.9920 },
+      { "lat": 24.8610, "lng": 66.9780 },
+      { "lat": 24.8490, "lng": 67.0100 }
+    ],
+    "normal_time_min": 20,
+    "status": "ACTIVE",
+    "bypasses": "Bunder Road"
+  },
+  {
+    "route_id": "rt_005",
+    "name": "Motorway M-2 Entry",
+    "city": "Lahore",
+    "polyline": [
+      { "lat": 31.5560, "lng": 74.3050 },
+      { "lat": 31.5500, "lng": 74.3200 },
+      { "lat": 31.5440, "lng": 74.3400 }
+    ],
+    "normal_time_min": 25,
+    "status": "ACTIVE",
+    "bypasses": "GT Road"
+  }
+]

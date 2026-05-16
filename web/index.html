@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIRO – Crisis Intelligence &amp; Response Orchestrator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Header ─────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="logo">CIRO</span>
+      <span class="tagline">Crisis Intelligence &amp; Response Orchestrator</span>
+    </div>
+    <div class="header-controls">
+      <button id="triggerBtn" class="btn-trigger">&#9654; TRIGGER PIPELINE</button>
+      <button id="resetBtn" class="btn-reset">&#8635; Reset System</button>
+    </div>
+    <div class="header-clock">
+      <span id="timestamp">--:--:--</span>
+    </div>
+  </header>
+
+  <!-- ── 2×2 Grid ───────────────────────────────────────────────── -->
+  <main class="grid">
+
+    <!-- Panel 1 – Live Signal Feed -->
+    <section class="panel" id="panel-signals">
+      <h2 class="panel-title">
+        <span class="dot dot-green"></span>
+        Live Signal Feed
+      </h2>
+      <div id="signal-feed" class="signal-feed">
+        <div class="empty-state">Waiting for signals…</div>
+      </div>
+    </section>
+
+    <!-- Panel 2 – Agent Pipeline Status -->
+    <section class="panel" id="panel-pipeline">
+      <h2 class="panel-title">
+        <span class="dot dot-blue"></span>
+        Agent Pipeline Status
+      </h2>
+      <div class="pipeline">
+        <div class="agent-card" id="agent-ingest" data-status="idle">
+          <div class="agent-num">1</div>
+          <div class="agent-body">
+            <div class="agent-name">Signal Ingest Agent</div>
+            <div class="agent-desc">Normalise &amp; buffer raw signals</div>
+          </div>
+          <div class="agent-badge">IDLE</div>
+        </div>
+        <div class="agent-connector"></div>
+        <div class="agent-card" id="agent-detect" data-status="idle">
+          <div class="agent-num">2</div>
+          <div class="agent-body">
+            <div class="agent-name">Event Detection Agent</div>
+            <div class="agent-desc">Classify crisis type &amp; confidence</div>
+          </div>
+          <div class="agent-badge">IDLE</div>
+        </div>
+        <div class="agent-connector"></div>
+        <div class="agent-card" id="agent-reason" data-status="idle">
+          <div class="agent-num">3</div>
+          <div class="agent-body">
+            <div class="agent-name">Reasoning &amp; Analysis Agent</div>
+            <div class="agent-desc">Assess impact &amp; affected population</div>
+          </div>
+          <div class="agent-badge">IDLE</div>
+        </div>
+        <div class="agent-connector"></div>
+        <div class="agent-card" id="agent-plan" data-status="idle">
+          <div class="agent-num">4</div>
+          <div class="agent-body">
+            <div class="agent-name">Action Planning Agent</div>
+            <div class="agent-desc">Generate coordinated response plan</div>
+          </div>
+          <div class="agent-badge">IDLE</div>
+        </div>
+        <div class="agent-connector"></div>
+        <div class="agent-card" id="agent-simulate" data-status="idle">
+          <div class="agent-num">5</div>
+          <div class="agent-body">
+            <div class="agent-name">Simulation Engine</div>
+            <div class="agent-desc">Execute actions &amp; update world state</div>
+          </div>
+          <div class="agent-badge">IDLE</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 3 – Crisis Detection -->
+    <section class="panel" id="panel-crisis">
+      <h2 class="panel-title">
+        <span class="dot dot-orange"></span>
+        Crisis Detection
+      </h2>
+      <div class="crisis-display" id="crisis-display">
+        <div class="crisis-idle">
+          <div class="crisis-idle-icon">&#9888;</div>
+          <div class="crisis-idle-text">No active crisis detected</div>
+          <div class="crisis-idle-sub">Trigger the pipeline to run detection</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 4 – Simulation Log -->
+    <section class="panel" id="panel-simulation">
+      <h2 class="panel-title">
+        <span class="dot dot-purple"></span>
+        Simulation Log
+      </h2>
+      <div id="sim-log" class="sim-log">
+        <div class="empty-state">No simulation results yet</div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

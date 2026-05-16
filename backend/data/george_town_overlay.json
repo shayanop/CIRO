@@ -1,0 +1,35 @@
+{
+  "location": "George Town",
+  "crisis_pin": { "lat": 24.8607, "lng": 67.0011 },
+  "affected_polygon": [
+    { "lat": 24.8660, "lng": 66.9960 },
+    { "lat": 24.8660, "lng": 67.0060 },
+    { "lat": 24.8550, "lng": 67.0060 },
+    { "lat": 24.8550, "lng": 66.9960 },
+    { "lat": 24.8660, "lng": 66.9960 }
+  ],
+  "primary_route": {
+    "name": "Bunder Road",
+    "polyline": [
+      { "lat": 24.8700, "lng": 66.9920 },
+      { "lat": 24.8660, "lng": 66.9970 },
+      { "lat": 24.8607, "lng": 67.0011 },
+      { "lat": 24.8540, "lng": 67.0060 },
+      { "lat": 24.8490, "lng": 67.0100 }
+    ],
+    "status": "BLOCKED",
+    "color": "#f85149"
+  },
+  "alternate_route": {
+    "name": "M.A. Jinnah Road",
+    "polyline": [
+      { "lat": 24.8700, "lng": 66.9920 },
+      { "lat": 24.8680, "lng": 66.9840 },
+      { "lat": 24.8610, "lng": 66.9780 },
+      { "lat": 24.8530, "lng": 66.9830 },
+      { "lat": 24.8490, "lng": 67.0100 }
+    ],
+    "status": "ACTIVE",
+    "color": "#3fb950"
+  }
+}

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import random
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import APIRouter
@@ -18,36 +19,23 @@ _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
 def _load_json(filename: str) -> dict | list:
-    """Load a JSON file from the data directory."""
     with open(_DATA_DIR / filename, encoding="utf-8") as f:
         return json.load(f)
 
 
-# Cache loaded data in memory
-_social_signals: list | None = None
-_weather_data: dict | None = None
-_traffic_data: dict | None = None
-
-
+@lru_cache(maxsize=1)
 def _get_social_signals() -> list:
-    global _social_signals
-    if _social_signals is None:
-        _social_signals = _load_json("social_signals.json")
-    return _social_signals
+    return _load_json("social_signals.json")
 
 
+@lru_cache(maxsize=1)
 def _get_weather_data() -> dict:
-    global _weather_data
-    if _weather_data is None:
-        _weather_data = _load_json("weather_mock.json")
-    return _weather_data
+    return _load_json("weather_mock.json")
 
 
+@lru_cache(maxsize=1)
 def _get_traffic_data() -> dict:
-    global _traffic_data
-    if _traffic_data is None:
-        _traffic_data = _load_json("traffic_mock.json")
-    return _traffic_data
+    return _load_json("traffic_mock.json")
 
 
 @router.get("/social", summary="Random mock social media signal")

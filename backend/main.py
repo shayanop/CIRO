@@ -6,8 +6,11 @@ The web dashboard is served as static files from ``/web`` once built.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from routers import detect, ingest, maps, mock, outcome, plan, reason, simulate, trace
 
@@ -72,4 +75,14 @@ async def root():
     return {
         "message": "CIRO API is running. Visit /docs for Swagger UI.",
         "docs_url": "/docs",
+        "dashboard_url": "/web/index.html",
     }
+
+
+# ---------------------------------------------------------------------------
+# Static Files – web dashboard (must come after all API routes)
+# ---------------------------------------------------------------------------
+
+_WEB_DIR = Path(__file__).resolve().parent.parent / "web"
+if _WEB_DIR.exists():
+    app.mount("/web", StaticFiles(directory=str(_WEB_DIR)), name="web")
