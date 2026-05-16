@@ -1,0 +1,14 @@
+{
+  "region": "Islamabad-Rawalpindi",
+  "timestamp": "2025-05-17T10:30:00Z",
+  "routes": [
+    {"route_id": "rt_001", "name": "G-10 to Blue Area", "congestion_level": 85, "status": "slow", "travel_time_min": 45, "normal_time_min": 15},
+    {"route_id": "rt_002", "name": "Shahrah-e-Faisal", "congestion_level": 92, "status": "blocked", "travel_time_min": 90, "normal_time_min": 20},
+    {"route_id": "rt_003", "name": "Margalla Road", "congestion_level": 20, "status": "free", "travel_time_min": 12, "normal_time_min": 10},
+    {"route_id": "rt_004", "name": "IJP Road", "congestion_level": 35, "status": "slow", "travel_time_min": 25, "normal_time_min": 18},
+    {"route_id": "rt_005", "name": "Constitution Avenue", "congestion_level": 40, "status": "slow", "travel_time_min": 20, "normal_time_min": 12},
+    {"route_id": "rt_006", "name": "Srinagar Highway", "congestion_level": 65, "status": "slow", "travel_time_min": 35, "normal_time_min": 15},
+    {"route_id": "rt_007", "name": "Expressway", "congestion_level": 78, "status": "slow", "travel_time_min": 40, "normal_time_min": 12},
+    {"route_id": "rt_008", "name": "GT Road", "congestion_level": 55, "status": "slow", "travel_time_min": 30, "normal_time_min": 20}
+  ]
+}

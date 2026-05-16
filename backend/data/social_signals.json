@@ -1,0 +1,22 @@
+[
+  {"id": "soc_001", "text": "G-10 mein pani bhar gaya hai, gaariyan phans gayi hain", "location": "G-10", "timestamp": "2025-05-17T10:15:00Z", "language": "ur"},
+  {"id": "soc_002", "text": "Flash flood happening at George Town for past 30 mins", "location": "George Town", "timestamp": "2025-05-17T10:20:00Z", "language": "en"},
+  {"id": "soc_003", "text": "It's 48 degrees in Jacobabad, people collapsing on the street", "location": "Jacobabad", "timestamp": "2025-05-17T11:00:00Z", "language": "en"},
+  {"id": "soc_004", "text": "Shahrah-e-Faisal completely jammed after truck accident", "location": "Shahrah-e-Faisal", "timestamp": "2025-05-17T09:30:00Z", "language": "en"},
+  {"id": "soc_005", "text": "Power line down on Constitution Avenue, sparks flying", "location": "Constitution Avenue", "timestamp": "2025-05-17T08:45:00Z", "language": "en"},
+  {"id": "soc_006", "text": "Shadeed baarish G-10 mein, sadkein doob gayi hain", "location": "G-10", "timestamp": "2025-05-17T10:25:00Z", "language": "ur"},
+  {"id": "soc_007", "text": "Margalla Road pe pani aa gaya hai, traffic ruk gaya", "location": "Margalla Road", "timestamp": "2025-05-17T10:35:00Z", "language": "ur"},
+  {"id": "soc_008", "text": "Blue Area mein garmi se log behosh ho rahe hain", "location": "Blue Area", "timestamp": "2025-05-17T12:00:00Z", "language": "ur"},
+  {"id": "soc_009", "text": "Major waterlogging on IJP Road, cars stranded", "location": "IJP Road", "timestamp": "2025-05-17T10:40:00Z", "language": "en"},
+  {"id": "soc_010", "text": "Karachi mein shadeed garmi, 47 degrees record", "location": "Karachi", "timestamp": "2025-05-17T13:00:00Z", "language": "ur"},
+  {"id": "soc_011", "text": "Accident near Faizabad interchange, ambulance needed urgently", "location": "Faizabad", "timestamp": "2025-05-17T09:15:00Z", "language": "en"},
+  {"id": "soc_012", "text": "I-8 markaz mein pani ghus aaya dukano mein", "location": "I-8", "timestamp": "2025-05-17T10:50:00Z", "language": "ur"},
+  {"id": "soc_013", "text": "Heavy rain causing flash flood in F-6 sector", "location": "F-6", "timestamp": "2025-05-17T10:55:00Z", "language": "en"},
+  {"id": "soc_014", "text": "GT Road blocked due to protest near Rawalpindi", "location": "GT Road", "timestamp": "2025-05-17T14:00:00Z", "language": "en"},
+  {"id": "soc_015", "text": "Lahore mein bijli ka khamba gir gaya sadak pe", "location": "Lahore", "timestamp": "2025-05-17T07:30:00Z", "language": "ur"},
+  {"id": "soc_016", "text": "Severe congestion on Expressway due to broken bridge", "location": "Expressway", "timestamp": "2025-05-17T08:00:00Z", "language": "en"},
+  {"id": "soc_017", "text": "E-11 mein nala ubhal gaya hai, ghar doob rahe hain", "location": "E-11", "timestamp": "2025-05-17T11:10:00Z", "language": "ur"},
+  {"id": "soc_018", "text": "Fire broke out in I-9 industrial area, smoke everywhere", "location": "I-9", "timestamp": "2025-05-17T15:00:00Z", "language": "en"},
+  {"id": "soc_019", "text": "Traffic jam on Srinagar Highway lasting over 2 hours", "location": "Srinagar Highway", "timestamp": "2025-05-17T16:00:00Z", "language": "en"},
+  {"id": "soc_020", "text": "Islamabad mein toofani hawa se darakht gir gaye", "location": "Islamabad", "timestamp": "2025-05-17T17:00:00Z", "language": "ur"}
+]
