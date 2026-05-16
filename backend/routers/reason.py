@@ -5,17 +5,144 @@ Stub router with fallback cache. Full Gemini integration by Arshman.
 
 from __future__ import annotations
 
+import json
+import os
 import time
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter
 
 from models.signal import CrisisAnalysis, CrisisEvent
+from services.cache import analysis_cache
 from services.trace_store import trace_store
 from utils.logger import log_agent_step
 
 router = APIRouter(prefix="/reason", tags=["Reasoning & Analysis"])
+
+# ---------------------------------------------------------------------------
+# Groq client configuration
+# ---------------------------------------------------------------------------
+
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_TIMEOUT_SECONDS = float(os.getenv("GROQ_TIMEOUT_SECONDS", "5"))
+GROQ_MAX_RETRIES = 1
+
+_groq_client = None
+
+
+def _get_groq_client():
+    """Lazily build a Groq client. Returns None if unavailable."""
+    global _groq_client
+    if _groq_client is not None:
+        return _groq_client
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return None
+    try:
+        from groq import Groq
+
+        _groq_client = Groq(api_key=api_key, timeout=GROQ_TIMEOUT_SECONDS)
+        return _groq_client
+    except Exception:
+        return None
+
+
+def _build_prompt(event: CrisisEvent) -> str:
+    """Compose the prompt sent to the LLM, embedding signal evidence."""
+    signal_lines = []
+    for s in event.signals[:8]:
+        loc = getattr(s, "location", None) or "unknown"
+        lang = getattr(s, "language", None) or "en"
+        content = (getattr(s, "content", "") or "")[:280]
+        signal_lines.append(f"- [{s.source}|{lang}|{loc}] {content}")
+    signals_block = "\n".join(signal_lines) if signal_lines else "- (no signal evidence)"
+
+    return (
+        "You are CIRO's Reasoning Agent. Given a detected crisis event and the\n"
+        "raw signals that produced it, produce a concise, judge-ready impact\n"
+        "analysis as STRICT JSON with this exact schema:\n"
+        "{\n"
+        '  "impact": [string, ...],            // 3-5 short bullets, plain English\n'
+        '  "affected_population": integer,      // realistic estimate\n'
+        '  "infrastructure_at_risk": [string], // 2-6 items\n'
+        '  "urgency": "immediate" | "within_hour" | "monitoring",\n'
+        '  "summary": string                    // one-paragraph briefing\n'
+        "}\n\n"
+        f"Crisis type: {event.crisis_type.value}\n"
+        f"Location: {event.location}\n"
+        f"Severity: {event.severity.value}\n"
+        f"Confidence: {event.confidence:.2f}\n"
+        f"Signal count: {len(event.signals)}\n"
+        f"Signals (may be Urdu or English):\n{signals_block}\n\n"
+        "Return ONLY the JSON object. No commentary, no markdown."
+    )
+
+
+def _coerce_analysis_payload(data: dict) -> dict:
+    """Normalise an LLM response into the analysis schema."""
+    impact = data.get("impact") or []
+    if isinstance(impact, str):
+        impact = [impact]
+    impact = [str(x) for x in impact][:8]
+
+    infra = data.get("infrastructure_at_risk") or []
+    if isinstance(infra, str):
+        infra = [infra]
+    infra = [str(x) for x in infra][:10]
+
+    try:
+        affected = int(data.get("affected_population") or 0)
+    except (TypeError, ValueError):
+        affected = 0
+
+    urgency = str(data.get("urgency") or "monitoring").lower()
+    if urgency not in {"immediate", "within_hour", "monitoring"}:
+        urgency = "monitoring"
+
+    return {
+        "impact": impact,
+        "affected_population": affected,
+        "infrastructure_at_risk": infra,
+        "urgency": urgency,
+        "summary": str(data.get("summary") or ""),
+    }
+
+
+def _call_groq(event: CrisisEvent) -> Optional[dict]:
+    """Call Groq with one retry. Returns None on any failure."""
+    client = _get_groq_client()
+    if client is None:
+        return None
+
+    prompt = _build_prompt(event)
+    last_err: Optional[Exception] = None
+    for attempt in range(GROQ_MAX_RETRIES + 1):
+        try:
+            resp = client.chat.completions.create(
+                model=GROQ_MODEL,
+                response_format={"type": "json_object"},
+                temperature=0.3,
+                max_tokens=600,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a crisis-analysis assistant for Pakistan urban emergencies. "
+                            "Always reply with strict JSON matching the requested schema."
+                        ),
+                    },
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            content = resp.choices[0].message.content or "{}"
+            data = json.loads(content)
+            return _coerce_analysis_payload(data)
+        except Exception as exc:  # network, json, rate limit, etc.
+            last_err = exc
+            continue
+    return None
 
 # ---------------------------------------------------------------------------
 # Fallback Cache – pre-populated for 5 demo scenarios
@@ -201,25 +328,42 @@ def _get_cached_analysis(crisis_type: str, severity: str) -> dict:
     }
 
 
-@router.post("/analyse", response_model=CrisisAnalysis, summary="AI analysis via Gemini")
+@router.post("/analyse", response_model=CrisisAnalysis, summary="AI analysis via Groq LLM")
 async def analyse_crisis(event: CrisisEvent):
-    """Analyse a crisis event using Gemini 1.5 Pro (via Antigravity).
+    """Analyse a crisis event using Groq's llama-3.3-70b-versatile.
 
-    Falls back to cached analysis if Gemini is unavailable.
+    Strategy:
+    1. Check the response cache keyed by (event_id, crisis_type, severity).
+    2. On miss, call Groq with strict JSON output, 5s timeout, one retry.
+    3. On any failure (no key, timeout, parse error), fall back to the
+       pre-populated FALLBACK_CACHE so the demo never breaks.
     """
     start = time.time()
 
-    # For now, use cached fallback (Gemini integration by Arshman)
-    cached = _get_cached_analysis(event.crisis_type.value, event.severity.value)
+    cache_key = (event.event_id, event.crisis_type.value, event.severity.value)
+    cached_payload = analysis_cache.get(cache_key)
+    source = "cache"
+
+    if cached_payload is None:
+        source = "fallback"
+        llm_payload = _call_groq(event)
+        if llm_payload is not None:
+            cached_payload = llm_payload
+            source = "groq"
+        else:
+            cached_payload = _get_cached_analysis(
+                event.crisis_type.value, event.severity.value
+            )
+        analysis_cache.set(cache_key, cached_payload)
 
     analysis = CrisisAnalysis(
         analysis_id=f"ana_{uuid.uuid4().hex[:8]}",
         event_id=event.event_id,
-        impact=cached["impact"],
-        affected_population=cached["affected_population"],
-        infrastructure_at_risk=cached["infrastructure_at_risk"],
-        urgency=cached["urgency"],
-        summary=cached["summary"],
+        impact=cached_payload["impact"],
+        affected_population=cached_payload["affected_population"],
+        infrastructure_at_risk=cached_payload["infrastructure_at_risk"],
+        urgency=cached_payload["urgency"],
+        summary=cached_payload["summary"],
     )
 
     elapsed_ms = int((time.time() - start) * 1000)
@@ -231,16 +375,33 @@ async def analyse_crisis(event: CrisisEvent):
         run_id=run_id,
         agent="reasoning-analysis-agent",
         step="analyse_crisis",
-        input_data={"event_id": event.event_id, "crisis_type": event.crisis_type.value},
+        input_data={
+            "event_id": event.event_id,
+            "crisis_type": event.crisis_type.value,
+            "source": source,
+        },
         output_data=analysis.model_dump(mode="json"),
         duration_ms=elapsed_ms,
     )
     log_agent_step(
         agent="reasoning-analysis-agent",
         step="analyse_crisis",
-        input_data={"event_id": event.event_id},
+        input_data={"event_id": event.event_id, "source": source},
         output_data={"analysis_id": analysis.analysis_id, "urgency": analysis.urgency},
         duration_ms=elapsed_ms,
     )
 
     return analysis
+
+
+@router.get("/cache/stats", summary="Inspect the reasoning response cache")
+async def cache_stats():
+    """Return hit/miss stats for the in-memory analysis cache."""
+    return analysis_cache.stats()
+
+
+@router.post("/cache/clear", summary="Clear the reasoning response cache")
+async def cache_clear():
+    """Drop every cached LLM analysis (used by demo reset)."""
+    analysis_cache.clear()
+    return {"status": "cleared"}

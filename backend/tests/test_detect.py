@@ -15,23 +15,54 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from routers.detect import compute_confidence, confidence_to_severity, detect_crisis_type
-from models.signal import CrisisType, Severity, Signal
+from routers.detect import (
+    compute_confidence,
+    compute_confidence_detailed,
+    confidence_to_severity,
+    detect_crisis_type,
+)
+from models.signal import CrisisType, Severity, Signal, SignalBatch
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _signal(source: str, content: str, keywords: list[str], severity_hint: str = "low") -> Signal:
+def _signal(
+    source: str,
+    content: str,
+    keywords: list[str],
+    severity_hint: str = "low",
+    location: str = "G-10",
+) -> Signal:
     return Signal(
         signal_id=f"sig_{source}",
         source=source,
         content=content,
         keywords=keywords,
         severity_hint=severity_hint,
-        location="G-10",
+        location=location,
     )
+
+
+def _dict_signal(
+    source: str,
+    content: str = "",
+    location: str = "G-10",
+    severity_hint: str = "low",
+    engagement: int = 0,
+    keywords: list[str] | None = None,
+) -> dict:
+    """Dict-shaped signal so we can attach metadata/engagement easily."""
+    return {
+        "signal_id": f"sig_{source}",
+        "source": source,
+        "content": content,
+        "location": location,
+        "severity_hint": severity_hint,
+        "keywords": keywords or [],
+        "metadata": {"engagement": engagement},
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -153,3 +184,128 @@ class TestDetectCrisisType:
         ]
         result = detect_crisis_type(signals)
         assert result == CrisisType.FLOOD
+
+
+# ---------------------------------------------------------------------------
+# Engagement Bonus
+# ---------------------------------------------------------------------------
+
+class TestEngagementBonus:
+    def test_no_engagement_no_bonus(self):
+        signals = [_dict_signal("social", engagement=0)]
+        _, br = compute_confidence_detailed(signals, "flood")
+        assert br["engagement_bonus"] == 0.0
+
+    def test_engagement_500_to_2000(self):
+        signals = [_dict_signal("social", engagement=1200)]
+        _, br = compute_confidence_detailed(signals, "flood")
+        assert br["engagement_bonus"] == 0.05
+
+    def test_engagement_above_2000(self):
+        signals = [_dict_signal("social", engagement=3500)]
+        _, br = compute_confidence_detailed(signals, "flood")
+        assert br["engagement_bonus"] == 0.10
+
+    def test_engagement_above_5000(self):
+        signals = [_dict_signal("social", engagement=8000)]
+        _, br = compute_confidence_detailed(signals, "flood")
+        assert br["engagement_bonus"] == 0.15
+
+
+# ---------------------------------------------------------------------------
+# Weather corroboration
+# ---------------------------------------------------------------------------
+
+class TestWeatherCorroboration:
+    def test_g10_flood_matches_rain_alert(self):
+        signals = [
+            _signal("social", "flood G-10", ["flood", "flash flood"], "high", location="G-10"),
+        ]
+        _, br = compute_confidence_detailed(signals, "flood")
+        assert br["weather_corroboration_bonus"] == 0.15
+        assert br["weather_matches"]
+
+    def test_karachi_heat_matches_heat_advisory(self):
+        signals = [_signal("social", "heat", ["heat"], "high", location="Karachi")]
+        _, br = compute_confidence_detailed(signals, "heatwave")
+        assert br["weather_corroboration_bonus"] == 0.15
+
+    def test_no_match_when_crisis_type_differs(self):
+        signals = [_signal("social", "fire", ["fire"], "high", location="G-10")]
+        _, br = compute_confidence_detailed(signals, "fire")
+        assert br["weather_corroboration_bonus"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Traffic corroboration
+# ---------------------------------------------------------------------------
+
+class TestTrafficCorroboration:
+    def test_shahrah_e_faisal_blocked_matches(self):
+        signals = [
+            _signal(
+                "social",
+                "Shahrah-e-Faisal blocked",
+                ["blocked"],
+                "high",
+                location="Shahrah-e-Faisal",
+            ),
+        ]
+        _, br = compute_confidence_detailed(signals, "blockage")
+        assert br["traffic_corroboration_bonus"] == 0.15
+        assert br["traffic_matches"]
+
+    def test_route_not_blocked_no_bonus(self):
+        signals = [_signal("social", "free", ["traffic"], "low", location="Margalla Road")]
+        _, br = compute_confidence_detailed(signals, "blockage")
+        assert br["traffic_corroboration_bonus"] == 0.0
+
+
+# ---------------------------------------------------------------------------
+# Multi-source CRITICAL escalation – the Track 2.2 acceptance scenario
+# ---------------------------------------------------------------------------
+
+class TestMultiSourceCritical:
+    def test_g10_flood_with_weather_and_traffic_is_critical(self):
+        signals = [
+            _signal("social", "flash flood G-10", ["flood", "flash flood"], "high", location="G-10"),
+            _signal("weather", "heavy rain warning", ["flood", "rain"], "high", location="G-10"),
+            _signal("traffic", "Kashmir Highway blocked", ["blockage"], "high", location="Kashmir Highway"),
+        ]
+        score, br = compute_confidence_detailed(signals, "flood")
+        # base 0.30 + sources 0.40 + severity 0.30 + weather 0.15 = 1.0 (capped)
+        assert score >= 0.85
+        assert confidence_to_severity(score) == Severity.CRITICAL
+
+
+# ---------------------------------------------------------------------------
+# Severity escalation via /detect/crisis (uses trace history)
+# ---------------------------------------------------------------------------
+
+class TestSeverityEscalation:
+    def test_repeated_event_bumps_severity(self, client):
+        batch_payload = {
+            "batch_id": "batch_test_1",
+            "primary_location": "F-7",
+            "signals": [
+                {
+                    "signal_id": "sig1",
+                    "source": "social",
+                    "content": "small flood F-7",
+                    "location": "F-7",
+                    "severity_hint": "medium",
+                    "keywords": ["flood"],
+                    "language": "en",
+                }
+            ],
+        }
+        r1 = client.post("/detect/crisis", json=batch_payload)
+        assert r1.status_code == 200
+        first = r1.json()
+        # Second call with same signature should escalate
+        batch_payload["batch_id"] = "batch_test_2"
+        r2 = client.post("/detect/crisis", json=batch_payload)
+        assert r2.status_code == 200
+        second = r2.json()
+        ladder = ["low", "medium", "high", "critical"]
+        assert ladder.index(second["severity"]) >= ladder.index(first["severity"])
