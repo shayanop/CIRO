@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from routers import detect, ingest, maps, mock, outcome, plan, reason, simulate, trace
+from routers import detect, ingest, maps, mock, outcome, pipeline, plan, reason, simulate, trace
 
 # ---------------------------------------------------------------------------
 # Application
@@ -48,6 +48,7 @@ app.include_router(detect.router)
 app.include_router(reason.router)
 app.include_router(plan.router)
 app.include_router(simulate.router)
+app.include_router(pipeline.router)
 app.include_router(maps.router)
 app.include_router(outcome.router)
 app.include_router(trace.router)

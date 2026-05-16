@@ -1,13 +1,18 @@
 .claude/
 .env
+.env.local
 
 # Python
 venv/
+.venv/
+backend/__pycache__/
 __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
 *.egg-info/
+.coverage
+htmlcov/
 
 # IDE
 .vscode/
@@ -16,7 +21,13 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
-__pycache__/
 
+# Flutter
+frontend/ciro_app/.dart_tool/
+frontend/ciro_app/build/
+frontend/ciro_app/.flutter-plugins
+frontend/ciro_app/.flutter-plugins-dependencies
 
-.venv/
+# Project artifacts
+backend/b:tmp_batch.json
+docs/releases/*.apk

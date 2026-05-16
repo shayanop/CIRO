@@ -24,6 +24,9 @@ class CrisisType(str, Enum):
     BLOCKAGE = "blockage"
     ACCIDENT = "accident"
     INFRASTRUCTURE = "infrastructure"
+    FIRE = "fire"
+    EARTHQUAKE = "earthquake"
+    STORM = "storm"
 
 
 class Severity(str, Enum):

@@ -1,0 +1,40 @@
+{
+  "location": "Shahrah-e-Faisal",
+  "crisis_type": "blockage",
+  "crisis_pin": {"lat": 24.8674, "lng": 67.0599},
+  "affected_polygon": [
+    {"lat": 24.8740, "lng": 67.0540},
+    {"lat": 24.8740, "lng": 67.0680},
+    {"lat": 24.8610, "lng": 67.0680},
+    {"lat": 24.8610, "lng": 67.0540},
+    {"lat": 24.8740, "lng": 67.0540}
+  ],
+  "primary_route": {
+    "name": "Shahrah-e-Faisal (Karsaz to Drig Road)",
+    "polyline": [
+      {"lat": 24.8674, "lng": 67.0599},
+      {"lat": 24.8720, "lng": 67.0710},
+      {"lat": 24.8775, "lng": 67.0860},
+      {"lat": 24.8830, "lng": 67.1010}
+    ],
+    "status": "BLOCKED",
+    "color": "#f85149"
+  },
+  "alternate_route": {
+    "name": "Via Korangi Road",
+    "polyline": [
+      {"lat": 24.8674, "lng": 67.0599},
+      {"lat": 24.8500, "lng": 67.0800},
+      {"lat": 24.8550, "lng": 67.0950},
+      {"lat": 24.8730, "lng": 67.1020},
+      {"lat": 24.8830, "lng": 67.1010}
+    ],
+    "status": "ACTIVE",
+    "color": "#3fb950"
+  },
+  "nearby_resources": [
+    {"type": "traffic_police", "name": "Karsaz Traffic Section", "lat": 24.8685, "lng": 67.0620},
+    {"type": "hospital", "name": "Liaquat National Hospital", "lat": 24.8848, "lng": 67.0707},
+    {"type": "tow_truck", "name": "City Tow Station", "lat": 24.8700, "lng": 67.0650}
+  ]
+}

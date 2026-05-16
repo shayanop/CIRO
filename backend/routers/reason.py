@@ -88,6 +88,97 @@ FALLBACK_CACHE = {
         "urgency": "monitoring",
         "summary": "Low-level rainfall causing minor waterlogging. Situation under monitoring.",
     },
+    ("fire", "high"): {
+        "impact": [
+            "Active fire spreading across multiple structures",
+            "Heavy smoke reducing visibility in adjacent sectors",
+            "Risk of cylinder/transformer secondary explosions",
+        ],
+        "affected_population": 1500,
+        "infrastructure_at_risk": ["buildings", "power grid", "roads"],
+        "urgency": "immediate",
+        "summary": "Major fire requires fire brigade, ambulance, and road closure response.",
+    },
+    ("fire", "critical"): {
+        "impact": [
+            "Industrial-scale fire with multiple structures engulfed",
+            "Toxic smoke plume affecting wider population",
+            "Risk of cascading failures across power grid",
+            "Mass casualty potential",
+        ],
+        "affected_population": 5000,
+        "infrastructure_at_risk": ["buildings", "power grid", "gas lines", "telecom"],
+        "urgency": "immediate",
+        "summary": "Critical fire incident demands multi-agency response and evacuation perimeter.",
+    },
+    ("earthquake", "high"): {
+        "impact": [
+            "Structural damage reported across affected zone",
+            "Aftershock risk continues for next 24-48 hours",
+            "Possible trapped persons in collapsed structures",
+        ],
+        "affected_population": 4000,
+        "infrastructure_at_risk": ["buildings", "bridges", "roads", "power grid"],
+        "urgency": "immediate",
+        "summary": "Seismic event requires search-and-rescue, structural assessment, and aftershock advisories.",
+    },
+    ("earthquake", "critical"): {
+        "impact": [
+            "Widespread structural collapse",
+            "Mass casualties feared, hospitals receiving wounded",
+            "Power, water, and telecom infrastructure compromised",
+            "Strong aftershocks expected",
+        ],
+        "affected_population": 12000,
+        "infrastructure_at_risk": ["buildings", "hospitals", "bridges", "power grid", "water supply", "telecom"],
+        "urgency": "immediate",
+        "summary": "Critical earthquake demands NDMA coordination, urban search and rescue, and field hospitals.",
+    },
+    ("storm", "high"): {
+        "impact": [
+            "High winds uprooting trees and damaging structures",
+            "Power lines down across several sectors",
+            "Travel hazardous on highways and bridges",
+        ],
+        "affected_population": 6000,
+        "infrastructure_at_risk": ["power grid", "roads", "billboards", "trees"],
+        "urgency": "immediate",
+        "summary": "Severe storm warrants advisories, shelter activation, and route closures.",
+    },
+    ("storm", "critical"): {
+        "impact": [
+            "Cyclone-force winds with extreme rainfall",
+            "Coastal flooding and storm surge expected",
+            "Major infrastructure at risk including airport",
+            "Mass evacuation may be required",
+        ],
+        "affected_population": 50000,
+        "infrastructure_at_risk": ["coastline", "airport", "power grid", "telecom", "buildings"],
+        "urgency": "immediate",
+        "summary": "Critical cyclone demands evacuation of coastal areas and full disaster response activation.",
+    },
+    ("infrastructure", "high"): {
+        "impact": [
+            "Major utility failure affecting thousands of households",
+            "Hospitals and critical facilities on backup power",
+            "Risk of secondary incidents (fires, flooding) elevated",
+        ],
+        "affected_population": 8000,
+        "infrastructure_at_risk": ["power grid", "water supply", "telecom"],
+        "urgency": "within_hour",
+        "summary": "Infrastructure failure requires WAPDA/utility coordination and citizen advisories.",
+    },
+    ("infrastructure", "critical"): {
+        "impact": [
+            "Cascading utility failures across multiple sectors",
+            "Critical care facilities at risk of running out of backup power",
+            "Communications partially down",
+        ],
+        "affected_population": 25000,
+        "infrastructure_at_risk": ["power grid", "water supply", "hospitals", "telecom", "transport"],
+        "urgency": "immediate",
+        "summary": "Critical infrastructure crisis requires multi-utility coordination and emergency provisioning.",
+    },
 }
 
 

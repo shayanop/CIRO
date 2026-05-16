@@ -1,0 +1,39 @@
+{
+  "location": "Karachi Coast",
+  "crisis_type": "storm",
+  "crisis_pin": {"lat": 24.8138, "lng": 66.9722},
+  "affected_polygon": [
+    {"lat": 24.9000, "lng": 66.8500},
+    {"lat": 24.9000, "lng": 67.1500},
+    {"lat": 24.7300, "lng": 67.1500},
+    {"lat": 24.7300, "lng": 66.8500},
+    {"lat": 24.9000, "lng": 66.8500}
+  ],
+  "primary_route": {
+    "name": "Mai Kolachi Road (Coastal)",
+    "polyline": [
+      {"lat": 24.8138, "lng": 66.9722},
+      {"lat": 24.8260, "lng": 66.9850},
+      {"lat": 24.8400, "lng": 66.9990}
+    ],
+    "status": "BLOCKED",
+    "color": "#f85149"
+  },
+  "alternate_route": {
+    "name": "Inland Route via Shahrah-e-Pakistan",
+    "polyline": [
+      {"lat": 24.8138, "lng": 66.9722},
+      {"lat": 24.8500, "lng": 67.0100},
+      {"lat": 24.8800, "lng": 67.0400},
+      {"lat": 24.9100, "lng": 67.0700}
+    ],
+    "status": "ACTIVE",
+    "color": "#3fb950"
+  },
+  "nearby_resources": [
+    {"type": "evacuation_centre", "name": "Expo Centre Karachi", "lat": 24.9285, "lng": 67.0688},
+    {"type": "evacuation_centre", "name": "Jinnah Sports Complex", "lat": 24.8770, "lng": 67.0260},
+    {"type": "hospital", "name": "Jinnah Postgraduate Medical Centre", "lat": 24.8830, "lng": 67.0250},
+    {"type": "rescue_boat_station", "name": "Karachi Port Rescue", "lat": 24.8350, "lng": 66.9700}
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "location": "Murree",
+  "crisis_type": "infrastructure",
+  "crisis_pin": {"lat": 33.9070, "lng": 73.3943},
+  "affected_polygon": [
+    {"lat": 33.9180, "lng": 73.3850},
+    {"lat": 33.9180, "lng": 73.4050},
+    {"lat": 33.8960, "lng": 73.4050},
+    {"lat": 33.8960, "lng": 73.3850},
+    {"lat": 33.9180, "lng": 73.3850}
+  ],
+  "primary_route": {
+    "name": "Murree Expressway (Lower Topa to Mall)",
+    "polyline": [
+      {"lat": 33.9070, "lng": 73.3943},
+      {"lat": 33.9110, "lng": 73.4010},
+      {"lat": 33.9165, "lng": 73.4045}
+    ],
+    "status": "BLOCKED",
+    "color": "#f85149"
+  },
+  "alternate_route": {
+    "name": "Via Old Murree Road",
+    "polyline": [
+      {"lat": 33.9070, "lng": 73.3943},
+      {"lat": 33.9030, "lng": 73.3990},
+      {"lat": 33.9080, "lng": 73.4060},
+      {"lat": 33.9165, "lng": 73.4045}
+    ],
+    "status": "ACTIVE",
+    "color": "#3fb950"
+  },
+  "nearby_resources": [
+    {"type": "hospital", "name": "THQ Hospital Murree", "lat": 33.9090, "lng": 73.3920},
+    {"type": "rescue_station", "name": "Rescue 1122 - Murree", "lat": 33.9050, "lng": 73.3950},
+    {"type": "shelter", "name": "Murree Hill Park Lodge", "lat": 33.9075, "lng": 73.3925}
+  ]
+}

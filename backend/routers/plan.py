@@ -82,6 +82,81 @@ ACTION_RULES = {
         ("dispatch_traffic_police", 1),
     ],
     ("accident", "low"): [],
+    # Fire
+    ("fire", "high"): [
+        ("dispatch_fire_brigade", 1),
+        ("dispatch_ambulance", 2),
+        ("close_road_segment", 3),
+        ("send_alert", 4),
+    ],
+    ("fire", "critical"): [
+        ("dispatch_fire_brigade", 1),
+        ("dispatch_ambulance", 2),
+        ("close_road_segment", 3),
+        ("send_alert", 4),
+        ("open_relief_camp", 5),
+    ],
+    ("fire", "medium"): [
+        ("dispatch_fire_brigade", 1),
+        ("send_alert", 2),
+    ],
+    ("fire", "low"): [],
+    # Earthquake
+    ("earthquake", "high"): [
+        ("dispatch_rescue_boats", 1),
+        ("dispatch_ambulance", 2),
+        ("open_relief_camp", 3),
+        ("send_alert", 4),
+    ],
+    ("earthquake", "critical"): [
+        ("dispatch_rescue_boats", 1),
+        ("dispatch_ambulance", 2),
+        ("dispatch_fire_brigade", 3),
+        ("open_relief_camp", 4),
+        ("send_alert", 5),
+    ],
+    ("earthquake", "medium"): [
+        ("send_alert", 1),
+        ("dispatch_traffic_police", 2),
+    ],
+    ("earthquake", "low"): [],
+    # Storm / cyclone / landslide
+    ("storm", "high"): [
+        ("send_alert", 1),
+        ("close_road_segment", 2),
+        ("open_relief_camp", 3),
+        ("reroute_traffic", 4),
+    ],
+    ("storm", "critical"): [
+        ("send_alert", 1),
+        ("close_road_segment", 2),
+        ("open_relief_camp", 3),
+        ("reroute_traffic", 4),
+        ("dispatch_rescue_boats", 5),
+    ],
+    ("storm", "medium"): [
+        ("send_alert", 1),
+        ("restrict_outdoor_activity", 2),
+    ],
+    ("storm", "low"): [],
+    # Infrastructure (power outage, gas leak, collapse, sinkhole)
+    ("infrastructure", "high"): [
+        ("dispatch_ambulance", 1),
+        ("close_road_segment", 2),
+        ("send_alert", 3),
+    ],
+    ("infrastructure", "critical"): [
+        ("dispatch_ambulance", 1),
+        ("dispatch_fire_brigade", 2),
+        ("close_road_segment", 3),
+        ("send_alert", 4),
+        ("open_relief_camp", 5),
+    ],
+    ("infrastructure", "medium"): [
+        ("dispatch_traffic_police", 1),
+        ("send_alert", 2),
+    ],
+    ("infrastructure", "low"): [],
 }
 
 

@@ -1,0 +1,37 @@
+{
+  "location": "F-6",
+  "crisis_type": "flood",
+  "crisis_pin": {"lat": 33.7203, "lng": 73.0680},
+  "affected_polygon": [
+    {"lat": 33.7255, "lng": 73.0625},
+    {"lat": 33.7255, "lng": 73.0740},
+    {"lat": 33.7155, "lng": 73.0740},
+    {"lat": 33.7155, "lng": 73.0625},
+    {"lat": 33.7255, "lng": 73.0625}
+  ],
+  "primary_route": {
+    "name": "F-6 to Blue Area via Jinnah Avenue",
+    "polyline": [
+      {"lat": 33.7203, "lng": 73.0680},
+      {"lat": 33.7230, "lng": 73.0735},
+      {"lat": 33.7185, "lng": 73.0810}
+    ],
+    "status": "BLOCKED",
+    "color": "#f85149"
+  },
+  "alternate_route": {
+    "name": "Via Constitution Avenue",
+    "polyline": [
+      {"lat": 33.7203, "lng": 73.0680},
+      {"lat": 33.7150, "lng": 73.0720},
+      {"lat": 33.7140, "lng": 73.0800},
+      {"lat": 33.7185, "lng": 73.0810}
+    ],
+    "status": "ACTIVE",
+    "color": "#3fb950"
+  },
+  "nearby_resources": [
+    {"type": "hospital", "name": "Polyclinic Hospital", "lat": 33.7220, "lng": 73.0760},
+    {"type": "shelter", "name": "F-6 Markaz Hall", "lat": 33.7205, "lng": 73.0700}
+  ]
+}

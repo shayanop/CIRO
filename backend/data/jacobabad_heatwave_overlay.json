@@ -1,0 +1,38 @@
+{
+  "location": "Jacobabad",
+  "crisis_type": "heatwave",
+  "crisis_pin": {"lat": 28.2820, "lng": 68.4380},
+  "affected_polygon": [
+    {"lat": 28.3100, "lng": 68.4000},
+    {"lat": 28.3100, "lng": 68.4800},
+    {"lat": 28.2500, "lng": 68.4800},
+    {"lat": 28.2500, "lng": 68.4000},
+    {"lat": 28.3100, "lng": 68.4000}
+  ],
+  "primary_route": {
+    "name": "Jacobabad Central Bazaar",
+    "polyline": [
+      {"lat": 28.2820, "lng": 68.4380},
+      {"lat": 28.2880, "lng": 68.4460},
+      {"lat": 28.2940, "lng": 68.4520}
+    ],
+    "status": "RESTRICTED",
+    "color": "#fb7185"
+  },
+  "alternate_route": {
+    "name": "Cool Corridor – Shaded Route",
+    "polyline": [
+      {"lat": 28.2820, "lng": 68.4380},
+      {"lat": 28.2780, "lng": 68.4450},
+      {"lat": 28.2880, "lng": 68.4530},
+      {"lat": 28.2940, "lng": 68.4520}
+    ],
+    "status": "ACTIVE",
+    "color": "#3fb950"
+  },
+  "nearby_resources": [
+    {"type": "cooling_centre", "name": "Civil Hospital Jacobabad", "lat": 28.2845, "lng": 68.4395},
+    {"type": "cooling_centre", "name": "Jacobabad Sports Stadium", "lat": 28.2870, "lng": 68.4440},
+    {"type": "water_distribution", "name": "City Water Point Alpha", "lat": 28.2810, "lng": 68.4350}
+  ]
+}

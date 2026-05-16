@@ -16,8 +16,16 @@ _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 # Locations whose overlay comes from a JSON file in /data
 _OVERLAY_FILES: dict[str, str] = {
-    "g-10":        "g10_flood_overlay.json",
-    "george town": "george_town_overlay.json",
+    "g-10":              "g10_flood_overlay.json",
+    "george town":       "george_town_overlay.json",
+    "f-6":               "f6_flood_overlay.json",
+    "jacobabad":         "jacobabad_heatwave_overlay.json",
+    "shahrah-e-faisal":  "shahrah_faisal_blockage_overlay.json",
+    "karachi coast":     "karachi_cyclone_overlay.json",
+    "karachi":           "karachi_cyclone_overlay.json",
+    "murree":            "murree_landslide_overlay.json",
+    "murree road":       "murree_landslide_overlay.json",
+    "murree expressway": "murree_landslide_overlay.json",
 }
 
 # Hardcoded fallback for locations without a dedicated file

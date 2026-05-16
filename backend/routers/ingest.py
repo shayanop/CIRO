@@ -42,11 +42,14 @@ _signal_buffer: List[Signal] = []
 
 # Common Urdu words that appear in romanised social media posts
 URDU_KEYWORDS = [
-    "mein", "gaya", "hai", "gaari", "gaariyan", "pani", "phans",
-    "bhar", "raha", "hua", "hain", "shadeed", "baarish", "sadak",
-    "sadkein", "doob", "garmi", "behosh", "gir", "toofani",
-    "hawa", "bijli", "khamba", "nala", "ubhal", "dukano",
-    "log", "rahe", "ghus", "aaya",
+    "mein", "gaya", "gayi", "gaye", "hai", "hain", "gaari", "gaariyan",
+    "pani", "phans", "bhar", "raha", "rahi", "rahe", "hua", "hui",
+    "shadeed", "baarish", "sadak", "sadkein", "doob", "garmi", "behosh",
+    "gir", "toofani", "toofan", "hawa", "bijli", "khamba", "nala",
+    "ubhal", "dukano", "dukan", "log", "ghus", "aaya", "aayi",
+    "dhamaka", "aag", "zalzala", "jhatke", "chhat", "khayi",
+    "tasadum", "zakhmi", "halaak", "musafir", "firing", "ehtjaj",
+    "se", "ka", "ki", "ko", "ne", "par", "pe", "ho", "kar",
 ]
 
 # Unicode range for Arabic/Urdu script characters
@@ -73,11 +76,47 @@ _SECTOR_RE = re.compile(r"\b([GFEI]-\d{1,2})\b", re.IGNORECASE)
 
 # Named Pakistani locations / roads
 NAMED_LOCATIONS = [
-    "George Town", "Karachi", "Lahore", "Islamabad", "Rawalpindi",
-    "Shahrah-e-Faisal", "Blue Area", "Margalla Road", "Margalla",
-    "IJP Road", "Constitution Avenue", "Srinagar Highway",
-    "Expressway", "GT Road", "Faizabad", "Jacobabad",
-    "I-9", "I-8", "G-10", "G-9", "F-6", "F-7", "F-8", "E-11", "E-7",
+    # Major cities
+    "Karachi Coast", "Karachi Airport", "Karachi Old City", "Karachi Port", "Karachi",
+    "Lahore Motorway", "Lahore",
+    "Islamabad Business District", "Islamabad",
+    "Rawalpindi Cantt", "Rawalpindi",
+    "Peshawar", "Quetta", "Multan", "Bahawalpur", "Sukkur", "Hyderabad",
+    "Faisalabad", "Sialkot", "Sialkot Airport", "Gujranwala", "Sargodha",
+    "Abbottabad", "Mansehra", "Mardan", "Nowshera", "Chitral", "Hunza",
+    "Mingora", "Hangu", "Kohat", "Bannu", "DG Khan", "Larkana",
+    "Larkana District", "Mirpur Khas", "Khanewal", "Sahiwal", "Lodhran",
+    "Rahim Yar Khan", "Hafizabad", "Chakwal", "Hazara", "Kasur",
+    "Murree Road", "Murree Expressway", "Murree", "Thar",
+    # Islamabad sectors
+    "G-6", "G-7", "G-9", "G-10", "G-11", "G-12", "G-13",
+    "F-6", "F-7", "F-8", "F-9", "F-10", "F-11",
+    "I-8", "I-9", "I-10", "I-11",
+    "E-7", "E-11",
+    # Roads / landmarks
+    "George Town", "Shahrah-e-Faisal", "Blue Area",
+    "Margalla Road", "Margalla", "IJP Road", "Constitution Avenue",
+    "Srinagar Highway", "Islamabad Expressway", "Expressway",
+    "GT Road Peshawar", "GT Road", "Faizabad", "Kashmir Highway",
+    "Saddar Rawalpindi", "Saddar", "Pir Wadhai", "Pindora",
+    "Wapda House", "Diplomatic Enclave", "PIMS Islamabad",
+    # Lahore landmarks
+    "Mall Road Lahore", "Mall Road", "Liberty Roundabout",
+    "Data Darbar", "Garden Town", "Johar Town",
+    # Karachi landmarks
+    "Tariq Road", "Lyari Expressway", "Lyari", "Liaquatabad",
+    "Korangi Road", "Super Highway", "Mai Kolachi", "Defence Phase 8",
+    "DHA Phase 5", "Gulshan-e-Iqbal", "Orangi Town", "Bahadurabad",
+    "Sharae Quaideen", "JPMC Karachi", "PIA Office Karachi",
+    "Bahria Town Phase 7", "Bahria Town", "Iqra University",
+    # Highways / motorways
+    "Motorway M-1", "Motorway M-2", "Motorway M-3",
+    "N-5 Highway", "N-25 Highway",
+    "Karakoram Highway", "Ring Road",
+    # Other places mentioned in mock data
+    "Jacobabad", "Naran-Kaghan", "Naran", "Kaghan",
+    "Northern Pakistan", "Nationwide", "Punjab Rural",
+    "Cantt Station", "Sohni Dharti Bridge",
 ]
 
 
@@ -102,18 +141,32 @@ def extract_location(text: str) -> Optional[str]:
 
 HIGH_KEYWORDS = [
     "flash flood", "pani bhar", "phans gayi", "phans gaye",
-    "accident", "collapse", "fire", "shadeed", "doob",
-    "behosh", "collapsing", "sparks", "gir gaya", "gir gaye",
-    "ubhal", "ghus aaya",
+    "accident", "collision", "collapse", "collapsed", "fire", "aag",
+    "shadeed", "doob", "submerged", "behosh", "collapsing", "sparks",
+    "gir gaya", "gir gaye", "ubhal", "ghus aaya",
+    "dhamaka", "blast", "explosion", "exploded",
+    "zalzala", "earthquake", "tremors", "jhatke",
+    "landslide", "cyclone", "tornado", "tornado dekha",
+    "halaak", "dead", "killed", "casualty", "casualties",
+    "critical", "emergency", "urgent", "rescue",
+    "stampede", "stranded", "trapped",
+    "chhat gir", "cylinder blast", "firing", "bomb",
+    "tasadum", "zakhmi", "injured", "burning",
+    "evacuation", "outbreak", "epidemic",
 ]
 
 MEDIUM_KEYWORDS = [
-    "blocked", "slow", "congestion", "delay", "jam", "jammed",
-    "stranded", "waterlogging", "protest",
+    "blocked", "block", "slow", "congestion", "congested", "delay", "delayed",
+    "jam", "jammed", "waterlogging", "waterlogged", "protest", "riot",
+    "smog", "dust storm", "hailstorm", "windstorm", "snowfall",
+    "power outage", "load shedding", "load-shedding", "blackout",
+    "leak", "leakage", "sewerage", "overflow",
+    "ehtjaj", "bandh", "band",
 ]
 
 LOW_KEYWORDS = [
-    "rain", "baarish", "traffic", "hawa",
+    "rain", "baarish", "traffic", "hawa", "fog", "drizzle",
+    "humid", "humidity", "windy", "cloudy",
 ]
 
 
@@ -137,17 +190,35 @@ def tag_severity(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 CRISIS_KEYWORDS = {
-    # Flood-related
-    "flood", "flash flood", "pani", "bhar", "doob", "waterlogging",
-    "nala", "ubhal", "baarish", "rain",
-    # Heatwave-related
-    "heatwave", "garmi", "heat", "degrees", "collapsing", "behosh",
-    # Blockage-related
-    "blocked", "jam", "jammed", "blockage", "congestion", "protest",
-    # Accident-related
-    "accident", "hadsa", "crash", "collision",
+    # Flood
+    "flood", "flash flood", "pani", "bhar", "doob", "submerged",
+    "waterlogging", "waterlogged", "nala", "ubhal", "baarish", "rain",
+    "river", "overflow", "darya",
+    # Heatwave
+    "heatwave", "garmi", "heat", "heatstroke", "degrees", "temperature",
+    "collapsing", "behosh", "cooling",
+    # Blockage / traffic
+    "blocked", "block", "jam", "jammed", "blockage", "congestion",
+    "protest", "riot", "stranded", "diverted",
+    # Accident
+    "accident", "hadsa", "crash", "collision", "tasadum", "pile-up",
+    "overturned", "derailed",
+    # Fire
+    "fire", "aag", "burning", "smoke", "flames", "cylinder blast",
+    "blaze",
+    # Earthquake / structural
+    "zalzala", "earthquake", "tremors", "jhatke", "magnitude",
+    "collapse", "collapsed", "sinkhole", "chhat gir",
+    # Storm / weather
+    "cyclone", "tornado", "landslide", "hailstorm", "windstorm",
+    "dust storm", "snowfall", "toofan", "smog",
     # Infrastructure
-    "fire", "collapse", "power line", "bijli", "khamba", "sparks",
+    "power line", "bijli", "khamba", "sparks", "outage", "blackout",
+    "leak", "leakage", "sewerage", "gas leak", "transformer",
+    # Security / blast
+    "dhamaka", "blast", "explosion", "bomb", "firing", "attack",
+    # Medical / public health
+    "dengue", "outbreak", "oxygen shortage", "hospital",
 }
 
 
@@ -241,6 +312,93 @@ async def ingest_signal(raw: RawSignalInput):
         step="normalise_signal",
         input_data=raw.model_dump(),
         output_data={"batch_id": batch.batch_id, "signal_count": len(batch.signals)},
+        duration_ms=elapsed_ms,
+    )
+
+    return batch
+
+
+@router.post("/auto", response_model=SignalBatch, summary="Auto-ingest from weather + traffic mocks")
+async def ingest_auto(location_filter: Optional[str] = None):
+    """Pull simulated weather alerts and blocked traffic routes, normalise
+    them into signals, buffer them, and return a multi-source ``SignalBatch``.
+
+    Used by the demo to trigger multi-source corroboration in the Event
+    Detection Agent without needing hand-crafted POSTs.  Optionally filter
+    by ``location_filter`` substring (e.g. "Karachi") to scope the signals.
+    """
+    import json
+    from pathlib import Path
+
+    start = time.time()
+    run_id = trace_store.start_run(signal_text="[auto-ingest]")
+
+    data_dir = Path(__file__).resolve().parent.parent / "data"
+    raw_inputs: List[RawSignalInput] = []
+
+    # ── Weather alerts → signals ──────────────────────────────────────────
+    try:
+        weather = json.loads((data_dir / "weather_mock.json").read_text(encoding="utf-8"))
+        for alert in weather.get("alerts", []):
+            for region in alert.get("regions", []):
+                if location_filter and location_filter.lower() not in region.lower():
+                    continue
+                raw_inputs.append(
+                    RawSignalInput(
+                        source="weather",
+                        text=f"{alert.get('event', 'Weather Alert')} in {region}: {alert.get('description', '')}",
+                        metadata={"geo": region, "severity": alert.get("severity")},
+                    )
+                )
+    except Exception:
+        pass
+
+    # ── Traffic blocked routes → signals ─────────────────────────────────
+    try:
+        traffic = json.loads((data_dir / "traffic_mock.json").read_text(encoding="utf-8"))
+        for route in traffic.get("routes", []):
+            if route.get("status") != "blocked":
+                continue
+            city = route.get("city", "")
+            name = route.get("name", "")
+            if location_filter and location_filter.lower() not in (city + " " + name).lower():
+                continue
+            incident = route.get("incident") or "blockage"
+            raw_inputs.append(
+                RawSignalInput(
+                    source="traffic",
+                    text=f"{name} ({city}) is blocked. Incident: {incident}. Travel time {route.get('travel_time_min', 0)} min vs normal {route.get('normal_time_min', 0)} min.",
+                    metadata={"geo": name, "city": city},
+                )
+            )
+    except Exception:
+        pass
+
+    # ── Process each → buffer → batch ─────────────────────────────────────
+    new_signals: List[Signal] = []
+    for raw in raw_inputs:
+        signal = process_signal(raw)
+        new_signals.append(signal)
+        _signal_buffer.append(signal)
+        if len(_signal_buffer) > _BUFFER_SIZE:
+            _signal_buffer.pop(0)
+
+    batch = _build_batch(list(_signal_buffer))
+    elapsed_ms = int((time.time() - start) * 1000)
+
+    trace_store.log_step(
+        run_id=run_id,
+        agent="signal-ingestion-agent",
+        step="auto_ingest",
+        input_data={"location_filter": location_filter, "candidates": len(raw_inputs)},
+        output_data=batch.model_dump(mode="json"),
+        duration_ms=elapsed_ms,
+    )
+    log_agent_step(
+        agent="signal-ingestion-agent",
+        step="auto_ingest",
+        input_data={"location_filter": location_filter},
+        output_data={"batch_id": batch.batch_id, "signal_count": len(batch.signals), "new_signals": len(new_signals)},
         duration_ms=elapsed_ms,
     )
 

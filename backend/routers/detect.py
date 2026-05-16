@@ -22,6 +22,13 @@ router = APIRouter(prefix="/detect", tags=["Event Detection"])
 # Confidence Scoring Algorithm
 # ---------------------------------------------------------------------------
 
+def _attr(signal, name, default=None):
+    """Fetch a field from either a Pydantic model or a dict."""
+    if isinstance(signal, dict):
+        return signal.get(name, default)
+    return getattr(signal, name, default)
+
+
 def compute_confidence(signals: list, crisis_type: str) -> float:
     """Compute detection confidence from signal evidence."""
     score = 0.0
@@ -35,15 +42,15 @@ def compute_confidence(signals: list, crisis_type: str) -> float:
         score += 0.05
 
     # Multi-source bonus
-    sources = {s.get("source", s.source if hasattr(s, "source") else "unknown") for s in signals}
+    sources = {_attr(s, "source", "unknown") for s in signals}
     if len(sources) >= 3:
         score += 0.40
     elif len(sources) >= 2:
         score += 0.25
 
-    # Severity boost
+    # Severity boost (use highest-severity signal in the batch)
     for s in signals:
-        hint = s.get("severity_hint", getattr(s, "severity_hint", None))
+        hint = _attr(s, "severity_hint")
         if hint == "high":
             score += 0.30
             break
@@ -69,37 +76,47 @@ def confidence_to_severity(confidence: float) -> Severity:
 # Crisis Type Detection
 # ---------------------------------------------------------------------------
 
-FLOOD_KEYWORDS = {"flood", "flash flood", "pani", "bhar", "doob", "waterlogging", "nala", "ubhal", "baarish", "rain"}
-HEATWAVE_KEYWORDS = {"heatwave", "heat", "garmi", "degrees", "collapsing", "behosh", "temperature"}
-BLOCKAGE_KEYWORDS = {"blocked", "jam", "jammed", "blockage", "congestion", "protest"}
-ACCIDENT_KEYWORDS = {"accident", "hadsa", "crash", "collision", "fire"}
+FLOOD_KEYWORDS = {"flood", "flash flood", "pani", "bhar", "doob", "submerged", "waterlogging", "waterlogged", "nala", "ubhal", "baarish", "rain", "river", "overflow", "darya"}
+HEATWAVE_KEYWORDS = {"heatwave", "heat", "heatstroke", "garmi", "degrees", "collapsing", "behosh", "temperature", "cooling"}
+BLOCKAGE_KEYWORDS = {"blocked", "jam", "jammed", "blockage", "congestion", "protest", "riot", "stranded", "diverted", "ehtjaj"}
+ACCIDENT_KEYWORDS = {"accident", "hadsa", "crash", "collision", "tasadum", "pile-up", "overturned", "derailed", "zakhmi", "injured"}
+FIRE_KEYWORDS = {"fire", "aag", "burning", "smoke", "flames", "cylinder blast", "blaze"}
+EARTHQUAKE_KEYWORDS = {"earthquake", "zalzala", "tremors", "jhatke", "magnitude"}
+STORM_KEYWORDS = {"cyclone", "tornado", "landslide", "hailstorm", "windstorm", "dust storm", "snowfall", "toofan"}
+INFRA_KEYWORDS = {"collapse", "collapsed", "sinkhole", "chhat gir", "power line", "bijli", "khamba", "sparks", "outage", "blackout", "leak", "leakage", "sewerage", "transformer", "dhamaka", "blast", "explosion"}
 
 
 def detect_crisis_type(signals) -> CrisisType:
-    """Determine the crisis type from signal keywords."""
+    """Determine the crisis type from signal keywords across all signals."""
     scores = {
         CrisisType.FLOOD: 0,
         CrisisType.HEATWAVE: 0,
         CrisisType.BLOCKAGE: 0,
         CrisisType.ACCIDENT: 0,
+        CrisisType.FIRE: 0,
+        CrisisType.EARTHQUAKE: 0,
+        CrisisType.STORM: 0,
+        CrisisType.INFRASTRUCTURE: 0,
+    }
+    keyword_buckets = {
+        CrisisType.FLOOD: FLOOD_KEYWORDS,
+        CrisisType.HEATWAVE: HEATWAVE_KEYWORDS,
+        CrisisType.BLOCKAGE: BLOCKAGE_KEYWORDS,
+        CrisisType.ACCIDENT: ACCIDENT_KEYWORDS,
+        CrisisType.FIRE: FIRE_KEYWORDS,
+        CrisisType.EARTHQUAKE: EARTHQUAKE_KEYWORDS,
+        CrisisType.STORM: STORM_KEYWORDS,
+        CrisisType.INFRASTRUCTURE: INFRA_KEYWORDS,
     }
     for s in signals:
-        keywords = getattr(s, "keywords", []) or s.get("keywords", []) if isinstance(s, dict) else s.keywords
-        text = (getattr(s, "content", "") or (s.get("content", "") if isinstance(s, dict) else "")).lower()
+        keywords = _attr(s, "keywords", []) or []
+        text = (_attr(s, "content", "") or "").lower()
         combined = " ".join(keywords) + " " + text
 
-        for kw in FLOOD_KEYWORDS:
-            if kw in combined:
-                scores[CrisisType.FLOOD] += 1
-        for kw in HEATWAVE_KEYWORDS:
-            if kw in combined:
-                scores[CrisisType.HEATWAVE] += 1
-        for kw in BLOCKAGE_KEYWORDS:
-            if kw in combined:
-                scores[CrisisType.BLOCKAGE] += 1
-        for kw in ACCIDENT_KEYWORDS:
-            if kw in combined:
-                scores[CrisisType.ACCIDENT] += 1
+        for ctype, bucket in keyword_buckets.items():
+            for kw in bucket:
+                if kw in combined:
+                    scores[ctype] += 1
 
     return max(scores, key=scores.get)
 
