@@ -35,7 +35,7 @@ def compute_confidence(signals: list, crisis_type: str) -> float:
         score += 0.05
 
     # Multi-source bonus
-    sources = {s["source"] if isinstance(s, dict) else s.source for s in signals}
+    sources = {s.get("source", s.source if hasattr(s, "source") else "unknown") for s in signals}
     if len(sources) >= 3:
         score += 0.40
     elif len(sources) >= 2:
@@ -43,7 +43,7 @@ def compute_confidence(signals: list, crisis_type: str) -> float:
 
     # Severity boost
     for s in signals:
-        hint = s["severity_hint"] if isinstance(s, dict) else s.severity_hint
+        hint = s.get("severity_hint", getattr(s, "severity_hint", None))
         if hint == "high":
             score += 0.30
             break
@@ -84,8 +84,8 @@ def detect_crisis_type(signals) -> CrisisType:
         CrisisType.ACCIDENT: 0,
     }
     for s in signals:
-        keywords = s["keywords"] if isinstance(s, dict) else (s.keywords or [])
-        text = (s["content"] if isinstance(s, dict) else (s.content or "")).lower()
+        keywords = getattr(s, "keywords", []) or s.get("keywords", []) if isinstance(s, dict) else s.keywords
+        text = (getattr(s, "content", "") or (s.get("content", "") if isinstance(s, dict) else "")).lower()
         combined = " ".join(keywords) + " " + text
 
         for kw in FLOOD_KEYWORDS:
