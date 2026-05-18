@@ -10,7 +10,7 @@
  * Signal feed polls GET /mock/social every 4 s.
  */
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://localhost:8001';
 
 /* ── Sample signals to inject on TRIGGER ─────────────────────────── */
 const SAMPLE_SIGNALS = [
@@ -44,13 +44,17 @@ const SAMPLE_SIGNALS = [
 /* ── State ───────────────────────────────────────────────────────── */
 let signalFeedInterval = null;
 let pipelineRunning = false;
+let leafletMap = null;
+let mapLayers = [];
 
 /* ── Boot ────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   startClock();
   startSignalFeed();
+  initMap();
   document.getElementById('triggerBtn').addEventListener('click', handleTrigger);
   document.getElementById('resetBtn').addEventListener('click', handleReset);
+  document.getElementById('trace-toggle').addEventListener('click', toggleTracePanel);
 });
 
 /* ── Clock ───────────────────────────────────────────────────────── */
@@ -104,6 +108,8 @@ function prependSignalCard(signal) {
 }
 
 /* ── Trigger Pipeline ────────────────────────────────────────────── */
+const AGENT_KEYS = ['ingest', 'detect', 'reason', 'plan', 'simulate'];
+
 async function handleTrigger() {
   if (pipelineRunning) return;
   pipelineRunning = true;
@@ -114,64 +120,84 @@ async function handleTrigger() {
   clearSimLog();
   resetAgentCards();
   clearCrisisPanel();
+  clearTracePanel();
+  resetOutcomeCards();
 
   const sample = SAMPLE_SIGNALS[Math.floor(Math.random() * SAMPLE_SIGNALS.length)];
 
+  // Optimistic animation: first 4 agents pulse RUNNING in parallel with the fetch.
+  setAgentStatus('ingest', 'running');
+  addLog('info', `Ingesting signal: "${sample.text.slice(0, 60)}…"`);
+
+  let result;
   try {
-    /* ── Step 1: Ingest ────── */
-    setAgentStatus('ingest', 'running');
-    addLog('info', `Ingesting signal: "${sample.text.slice(0, 60)}…"`);
-    const batch = await post('/ingest/signal', sample);
-    setAgentStatus('ingest', 'complete');
-    addLog('info', `Signal batch built — ${batch.signals?.length ?? 1} signal(s), location: ${batch.primary_location || 'unknown'}`);
-
-    await delay(300);
-
-    /* ── Step 2: Detect ────── */
-    setAgentStatus('detect', 'running');
-    addLog('info', 'Running event detection…');
-    const event = await post('/detect/crisis', batch);
-    setAgentStatus('detect', 'complete');
-    addLog('info', `Crisis detected: ${event.crisis_type.toUpperCase()} | Confidence: ${Math.round(event.confidence * 100)}% | Severity: ${event.severity.toUpperCase()}`);
-
-    await delay(300);
-
-    /* ── Step 3: Reason ────── */
-    setAgentStatus('reason', 'running');
-    addLog('info', 'Analysing impact and affected population…');
-    const analysis = await post('/reason/analyse', event);
-    setAgentStatus('reason', 'complete');
-    addLog('info', `Analysis complete — ${analysis.affected_population.toLocaleString()} people affected | Urgency: ${analysis.urgency}`);
-
-    // Render crisis panel now (we have both event and analysis)
-    renderCrisisPanel(event, analysis);
-
-    await delay(300);
-
-    /* ── Step 4: Plan ────── */
-    setAgentStatus('plan', 'running');
-    addLog('info', 'Generating action plan…');
-    const plan = await post('/plan/actions', event);
-    setAgentStatus('plan', 'complete');
-    addLog('info', `Action plan ready — ${plan.actions?.length ?? 0} action(s) queued`);
-
-    await delay(300);
-
-    /* ── Step 5: Simulate ────── */
-    setAgentStatus('simulate', 'running');
-    addLog('info', 'Executing actions against world state…');
-    const result = await post('/simulate/execute', plan);
-    setAgentStatus('simulate', 'complete');
-
-    renderSimulationResults(result);
-
+    result = await post('/pipeline/run', sample);
   } catch (err) {
     addLog('error', `Pipeline error: ${err.message}`);
+    AGENT_KEYS.forEach(k => setAgentStatus(k, 'error'));
+    pipelineRunning = false;
+    btn.disabled = false;
+    btn.textContent = '▶ TRIGGER PIPELINE';
+    return;
+  }
+
+  const { batch, event, analysis, plan, simulation, run_id } = result;
+
+  try {
+    // Drive the 5-card animation from the actual run.
+    await animateAgentsFromRun(run_id, { batch, event, analysis, plan, simulation });
+
+    renderCrisisPanel(event, analysis);
+    renderSimulationResults(simulation);
+
+    // Map + Trace + Outcome – fired in parallel.
+    await Promise.all([
+      renderMapForLocation(event.location),
+      renderTraceFromLatest(),
+      renderOutcomeSummary(),
+    ]);
+  } catch (err) {
+    addLog('error', `Render error: ${err.message}`);
   } finally {
     pipelineRunning = false;
     btn.disabled = false;
     btn.textContent = '▶ TRIGGER PIPELINE';
   }
+}
+
+async function animateAgentsFromRun(_runId, { batch, event, analysis, plan, simulation }) {
+  // Pull the trace so per-step durations match reality where possible.
+  let steps = [];
+  try {
+    const trace = await get('/trace/latest');
+    steps = trace.steps || [];
+  } catch (_) { /* ignore */ }
+
+  const stepFor = (agent) => steps.find(s => s.agent && s.agent.startsWith(agent)) || {};
+
+  // Step 1 — already showing RUNNING
+  setAgentStatus('ingest', 'complete');
+  addLog('info', `Batch built — ${batch.signals?.length ?? 1} signal(s), location: ${batch.primary_location || 'unknown'}`);
+  await delay(180);
+
+  setAgentStatus('detect', 'running');
+  await delay(Math.min(stepFor('event-detection').duration_ms || 250, 700));
+  setAgentStatus('detect', 'complete');
+  addLog('info', `Crisis detected: ${event.crisis_type.toUpperCase()} | Confidence: ${Math.round(event.confidence * 100)}% | Severity: ${event.severity.toUpperCase()}`);
+
+  setAgentStatus('reason', 'running');
+  await delay(Math.min(stepFor('reasoning').duration_ms || 250, 700));
+  setAgentStatus('reason', 'complete');
+  addLog('info', `Analysis — ${(analysis.affected_population || 0).toLocaleString()} affected | Urgency: ${analysis.urgency}`);
+
+  setAgentStatus('plan', 'running');
+  await delay(Math.min(stepFor('action-planning').duration_ms || 200, 600));
+  setAgentStatus('plan', 'complete');
+  addLog('info', `Plan ready — ${plan.actions?.length ?? 0} action(s) queued`);
+
+  setAgentStatus('simulate', 'running');
+  await delay(Math.min(stepFor('simulation').duration_ms || 200, 600));
+  setAgentStatus('simulate', 'complete');
 }
 
 /* ── Reset ───────────────────────────────────────────────────────── */
@@ -182,11 +208,14 @@ async function handleReset() {
   resetAgentCards();
   clearCrisisPanel();
   clearSimLog();
+  clearTracePanel();
+  resetOutcomeCards();
+  clearMap();
 }
 
 /* ── Agent Card Helpers ──────────────────────────────────────────── */
 const AGENT_IDS = { ingest: 'agent-ingest', detect: 'agent-detect', reason: 'agent-reason', plan: 'agent-plan', simulate: 'agent-simulate' };
-const BADGE_TEXT = { idle: 'IDLE', running: 'RUNNING', complete: '✓ DONE' };
+const BADGE_TEXT = { idle: 'IDLE', running: 'RUNNING', complete: '✓ DONE', error: '✗ ERROR' };
 
 function setAgentStatus(key, status) {
   const card = document.getElementById(AGENT_IDS[key]);
@@ -382,4 +411,243 @@ function esc(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+/* ── Leaflet Map (3.5) ───────────────────────────────────────────── */
+function initMap() {
+  if (typeof L === 'undefined') return;
+  leafletMap = L.map('leaflet-map', {
+    zoomControl: true,
+    attributionControl: false,
+  }).setView([30.3753, 69.3451], 5); // Pakistan centroid
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap',
+  }).addTo(leafletMap);
+
+  L.control.attribution({ prefix: false }).addAttribution('&copy; OpenStreetMap').addTo(leafletMap);
+}
+
+function clearMap() {
+  if (!leafletMap) return;
+  mapLayers.forEach(l => leafletMap.removeLayer(l));
+  mapLayers = [];
+  leafletMap.setView([30.3753, 69.3451], 5);
+  const metaEl = document.getElementById('map-location');
+  if (metaEl) metaEl.textContent = 'No active crisis';
+}
+
+async function renderMapForLocation(location) {
+  if (!leafletMap || !location) return;
+  let overlay;
+  try {
+    overlay = await get(`/maps/crisis-overlay?location=${encodeURIComponent(location)}`);
+  } catch (err) {
+    addLog('error', `Map overlay fetch failed: ${err.message}`);
+    return;
+  }
+
+  // Clear previous layers
+  mapLayers.forEach(l => leafletMap.removeLayer(l));
+  mapLayers = [];
+
+  const bounds = [];
+
+  // Crisis pin
+  if (overlay.crisis_pin && overlay.crisis_pin.lat && overlay.crisis_pin.lng) {
+    const pin = L.circleMarker([overlay.crisis_pin.lat, overlay.crisis_pin.lng], {
+      radius: 9,
+      color: '#fff',
+      weight: 2,
+      fillColor: '#f85149',
+      fillOpacity: 0.95,
+    }).bindPopup(`<strong>${esc(overlay.location || location)}</strong>`);
+    pin.addTo(leafletMap);
+    mapLayers.push(pin);
+    bounds.push([overlay.crisis_pin.lat, overlay.crisis_pin.lng]);
+  }
+
+  // Affected polygon
+  const poly = (overlay.affected_polygon || []).map(p => [p.lat, p.lng]);
+  if (poly.length >= 3) {
+    const polygon = L.polygon(poly, {
+      color: '#f85149',
+      weight: 1.5,
+      fillColor: '#f85149',
+      fillOpacity: 0.18,
+    }).addTo(leafletMap);
+    mapLayers.push(polygon);
+    poly.forEach(pt => bounds.push(pt));
+  }
+
+  // Primary (blocked) route
+  const primary = (overlay.primary_route?.polyline || []).map(p => [p.lat, p.lng]);
+  if (primary.length >= 2) {
+    const primaryLine = L.polyline(primary, {
+      color: overlay.primary_route?.color || '#f85149',
+      weight: 5,
+      opacity: 0.85,
+    }).bindTooltip(`${esc(overlay.primary_route?.name || 'Primary')} — ${esc(overlay.primary_route?.status || '')}`);
+    primaryLine.addTo(leafletMap);
+    mapLayers.push(primaryLine);
+    primary.forEach(pt => bounds.push(pt));
+  }
+
+  // Alternate route
+  const alt = (overlay.alternate_route?.polyline || []).map(p => [p.lat, p.lng]);
+  if (alt.length >= 2) {
+    const altLine = L.polyline(alt, {
+      color: overlay.alternate_route?.color || '#3fb950',
+      weight: 4,
+      opacity: 0.9,
+      dashArray: '8 6',
+    }).bindTooltip(`${esc(overlay.alternate_route?.name || 'Alternate')} — ${esc(overlay.alternate_route?.status || '')}`);
+    altLine.addTo(leafletMap);
+    mapLayers.push(altLine);
+    alt.forEach(pt => bounds.push(pt));
+  }
+
+  if (bounds.length) {
+    leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+  }
+  const metaEl = document.getElementById('map-location');
+  if (metaEl) metaEl.textContent = overlay.location || location;
+}
+
+/* ── Trace Stepper (3.6) ─────────────────────────────────────────── */
+function clearTracePanel() {
+  const stepper = document.getElementById('trace-stepper');
+  stepper.innerHTML = '<div class="empty-state">Trigger the pipeline to view the trace</div>';
+  const meta = document.getElementById('trace-meta');
+  if (meta) meta.textContent = '—';
+}
+
+function toggleTracePanel() {
+  const panel = document.getElementById('panel-trace');
+  panel.classList.toggle('panel-trace--collapsed');
+}
+
+const AGENT_KEY_MAP = [
+  { match: 'signal-ingestion',      key: 'ingest',   label: 'Signal Ingestion Agent' },
+  { match: 'event-detection',       key: 'detect',   label: 'Event Detection Agent' },
+  { match: 'reasoning',             key: 'reason',   label: 'Reasoning & Analysis Agent' },
+  { match: 'action-planning',       key: 'plan',     label: 'Action Planning Agent' },
+  { match: 'simulation',            key: 'simulate', label: 'Simulation Engine' },
+];
+
+async function renderTraceFromLatest() {
+  let trace;
+  try {
+    trace = await get('/trace/latest');
+  } catch (err) {
+    addLog('error', `Trace fetch failed: ${err.message}`);
+    return;
+  }
+  const stepper = document.getElementById('trace-stepper');
+  stepper.innerHTML = '';
+
+  const steps = trace.steps || [];
+  const meta = document.getElementById('trace-meta');
+  if (meta) {
+    meta.textContent = `${trace.run_id || ''} · ${steps.length} steps · ${trace.total_duration_ms || 0} ms total`;
+  }
+
+  steps.forEach((step, idx) => {
+    const mapping = AGENT_KEY_MAP.find(m => (step.agent || '').includes(m.match));
+    const key = mapping?.key || 'ingest';
+    const label = mapping?.label || step.agent;
+
+    const card = document.createElement('div');
+    card.className = `trace-step trace-step--${key}`;
+    card.innerHTML = `
+      <div class="trace-head">
+        <div class="trace-step-num">${idx + 1}</div>
+        <div>
+          <div class="trace-step-agent">${esc(label)}</div>
+          <div class="trace-step-step">${esc(step.step || '')}</div>
+        </div>
+        <div class="trace-step-duration">${step.duration_ms ?? 0} ms</div>
+        <span class="trace-step-caret">▸</span>
+      </div>
+      <div class="trace-body">
+        <div class="trace-body-label">Input</div>
+        <pre>${highlightJson(step.input)}</pre>
+        <div class="trace-body-label">Output</div>
+        <pre>${highlightJson(step.output)}</pre>
+      </div>
+    `;
+    card.querySelector('.trace-head').addEventListener('click', () => {
+      card.classList.toggle('trace-step--open');
+    });
+    stepper.appendChild(card);
+  });
+
+  if (!steps.length) {
+    stepper.innerHTML = '<div class="empty-state">Trace is empty for this run</div>';
+  }
+}
+
+function highlightJson(obj) {
+  let json;
+  try { json = JSON.stringify(obj, null, 2); } catch (_) { json = String(obj); }
+  if (json === undefined) json = 'null';
+  return esc(json)
+    .replace(/&quot;([^&]+?)&quot;(\s*:)/g, '<span class="json-key">&quot;$1&quot;</span>$2')
+    .replace(/: (&quot;[^<]*?&quot;)/g, ': <span class="json-str">$1</span>')
+    .replace(/: (-?\d+\.?\d*)/g, ': <span class="json-num">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="json-bool">$1</span>')
+    .replace(/: (null)/g, ': <span class="json-null">$1</span>');
+}
+
+/* ── Outcome Visualisation (3.7) ─────────────────────────────────── */
+const OUTCOME_FIELDS = [
+  { id: 'outcome-congestion', key: 'congestion_reduction_pct', suffix: '%', decimals: 1 },
+  { id: 'outcome-vehicles',   key: 'vehicles_rerouted',        suffix: '' },
+  { id: 'outcome-eta',        key: 'min_eta_minutes',          suffix: ' min' },
+  { id: 'outcome-alerts',     key: 'alerts_dispatched',        suffix: '' },
+  { id: 'outcome-tickets',    key: 'tickets_created',          suffix: '' },
+];
+
+function resetOutcomeCards() {
+  OUTCOME_FIELDS.forEach(({ id, suffix }) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = suffix ? `0${suffix}` : '0';
+    const card = el?.closest('.outcome-card');
+    if (card) card.classList.remove('bumped');
+  });
+}
+
+async function renderOutcomeSummary() {
+  let summary;
+  try {
+    summary = await get('/outcome/summary');
+  } catch (err) {
+    addLog('error', `Outcome fetch failed: ${err.message}`);
+    return;
+  }
+  OUTCOME_FIELDS.forEach(({ id, key, suffix, decimals }) => {
+    const target = Number(summary[key] || 0);
+    animateCounter(id, target, suffix, decimals);
+    const card = document.getElementById(id)?.closest('.outcome-card');
+    if (card && target > 0) {
+      card.classList.add('bumped');
+    }
+  });
+}
+
+function animateCounter(id, target, suffix = '', decimals = 0) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const duration = 700;
+  const start = performance.now();
+  function frame(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const value = target * eased;
+    const display = decimals ? value.toFixed(decimals) : Math.round(value).toLocaleString();
+    el.textContent = `${display}${suffix}`;
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 }

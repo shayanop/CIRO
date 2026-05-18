@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CIRO – Crisis Intelligence &amp; Response Orchestrator</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -119,6 +121,67 @@
 
   </main>
 
+  <!-- ── Outcome Visualisation ────────────────────────────────── -->
+  <section class="panel panel-wide" id="panel-outcome">
+    <h2 class="panel-title">
+      <span class="dot dot-green"></span>
+      Outcome Snapshot
+    </h2>
+    <div class="outcome-grid" id="outcome-grid">
+      <div class="outcome-card" data-metric="congestion">
+        <div class="outcome-value" id="outcome-congestion">0%</div>
+        <div class="outcome-label">Congestion reduced</div>
+      </div>
+      <div class="outcome-card" data-metric="vehicles">
+        <div class="outcome-value" id="outcome-vehicles">0</div>
+        <div class="outcome-label">Vehicles rerouted</div>
+      </div>
+      <div class="outcome-card" data-metric="eta">
+        <div class="outcome-value" id="outcome-eta">0 min</div>
+        <div class="outcome-label">Min ETA</div>
+      </div>
+      <div class="outcome-card" data-metric="alerts">
+        <div class="outcome-value" id="outcome-alerts">0</div>
+        <div class="outcome-label">Alerts dispatched</div>
+      </div>
+      <div class="outcome-card" data-metric="tickets">
+        <div class="outcome-value" id="outcome-tickets">0</div>
+        <div class="outcome-label">Tickets created</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Live Map (Leaflet + OSM) ─────────────────────────────── -->
+  <section class="panel panel-wide" id="panel-map">
+    <h2 class="panel-title">
+      <span class="dot dot-blue"></span>
+      Live Map — Crisis Overlay
+      <span class="panel-meta" id="map-location">No active crisis</span>
+    </h2>
+    <div id="leaflet-map" class="leaflet-map"></div>
+    <div class="map-legend">
+      <span class="legend-item"><span class="legend-swatch sw-pin"></span>Crisis pin</span>
+      <span class="legend-item"><span class="legend-swatch sw-polygon"></span>Affected area</span>
+      <span class="legend-item"><span class="legend-swatch sw-blocked"></span>Blocked route</span>
+      <span class="legend-item"><span class="legend-swatch sw-alt"></span>Alternate route</span>
+    </div>
+  </section>
+
+  <!-- ── Agent Reasoning Trace ────────────────────────────────── -->
+  <section class="panel panel-wide" id="panel-trace">
+    <h2 class="panel-title clickable" id="trace-toggle">
+      <span class="dot dot-purple"></span>
+      Agent Reasoning Trace
+      <span class="panel-meta" id="trace-meta">—</span>
+      <span class="toggle-caret" id="trace-caret">▾</span>
+    </h2>
+    <div class="trace-stepper" id="trace-stepper">
+      <div class="empty-state">Trigger the pipeline to view the trace</div>
+    </div>
+  </section>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="app.js"></script>
 </body>
 </html>
