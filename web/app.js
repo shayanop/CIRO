@@ -10,7 +10,7 @@
  * Signal feed polls GET /mock/social every 4 s.
  */
 
-const BASE_URL = 'http://localhost:8001';
+const BASE_URL = 'http://localhost:8000';
 
 /* ── Sample signals to inject on TRIGGER ─────────────────────────── */
 const SAMPLE_SIGNALS = [
@@ -254,9 +254,9 @@ function renderCrisisPanel(event, analysis) {
   /* Gauge colour by severity */
   const gaugeColor = {
     critical: '#f85149',
-    high:     '#e3843a',
-    medium:   '#d29922',
-    low:      '#3fb950'
+    high: '#e3843a',
+    medium: '#d29922',
+    low: '#3fb950'
   }[event.severity?.toLowerCase()] || '#58a6ff';
 
   const sevClass = `sev-${(event.severity || 'LOW').toUpperCase()}`;
@@ -529,11 +529,11 @@ function toggleTracePanel() {
 }
 
 const AGENT_KEY_MAP = [
-  { match: 'signal-ingestion',      key: 'ingest',   label: 'Signal Ingestion Agent' },
-  { match: 'event-detection',       key: 'detect',   label: 'Event Detection Agent' },
-  { match: 'reasoning',             key: 'reason',   label: 'Reasoning & Analysis Agent' },
-  { match: 'action-planning',       key: 'plan',     label: 'Action Planning Agent' },
-  { match: 'simulation',            key: 'simulate', label: 'Simulation Engine' },
+  { match: 'signal-ingestion', key: 'ingest', label: 'Signal Ingestion Agent' },
+  { match: 'event-detection', key: 'detect', label: 'Event Detection Agent' },
+  { match: 'reasoning', key: 'reason', label: 'Reasoning & Analysis Agent' },
+  { match: 'action-planning', key: 'plan', label: 'Action Planning Agent' },
+  { match: 'simulation', key: 'simulate', label: 'Simulation Engine' },
 ];
 
 async function renderTraceFromLatest() {
@@ -603,10 +603,10 @@ function highlightJson(obj) {
 /* ── Outcome Visualisation (3.7) ─────────────────────────────────── */
 const OUTCOME_FIELDS = [
   { id: 'outcome-congestion', key: 'congestion_reduction_pct', suffix: '%', decimals: 1 },
-  { id: 'outcome-vehicles',   key: 'vehicles_rerouted',        suffix: '' },
-  { id: 'outcome-eta',        key: 'min_eta_minutes',          suffix: ' min' },
-  { id: 'outcome-alerts',     key: 'alerts_dispatched',        suffix: '' },
-  { id: 'outcome-tickets',    key: 'tickets_created',          suffix: '' },
+  { id: 'outcome-vehicles', key: 'vehicles_rerouted', suffix: '' },
+  { id: 'outcome-eta', key: 'min_eta_minutes', suffix: ' min' },
+  { id: 'outcome-alerts', key: 'alerts_dispatched', suffix: '' },
+  { id: 'outcome-tickets', key: 'tickets_created', suffix: '' },
 ];
 
 function resetOutcomeCards() {

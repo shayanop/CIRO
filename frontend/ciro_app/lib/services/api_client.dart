@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/models.dart';
 
 class ApiClient {
-  static const String baseUrl = 'http://10.0.2.2:8000'; // Android emulator → host localhost
+  static const String baseUrl = bool.hasEnvironment('CIRO_API')
+      ? String.fromEnvironment('CIRO_API')
+      : (kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000');
 
   static Future<Map<String, dynamic>> _get(String path) async {
     final res = await http.get(Uri.parse('$baseUrl$path'));
