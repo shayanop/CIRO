@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../services/api_client.dart';
 import '../services/app_state.dart';
+import '../theme.dart';
 
 enum _TileStyle { street, dark, satellite }
 
@@ -137,24 +138,26 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     return Scaffold(
+      backgroundColor: kBg,
       appBar: AppBar(
         title: Text(event != null ? 'Map · ${event.location}' : 'Crisis Map'),
         actions: [
           PopupMenuButton<_TileStyle>(
             tooltip: 'Map style',
-            icon: const Icon(Icons.layers),
+            color: kCard,
+            icon: const Icon(Icons.layers_rounded),
             initialValue: _tileStyle,
             onSelected: (v) => setState(() => _tileStyle = v),
             itemBuilder: (_) => const [
-              PopupMenuItem(value: _TileStyle.dark, child: Text('Dark')),
-              PopupMenuItem(value: _TileStyle.street, child: Text('Street')),
-              PopupMenuItem(value: _TileStyle.satellite, child: Text('Satellite')),
+              PopupMenuItem(value: _TileStyle.dark, child: Text('Dark Style', style: TextStyle(color: Colors.white70))),
+              PopupMenuItem(value: _TileStyle.street, child: Text('Street View', style: TextStyle(color: Colors.white70))),
+              PopupMenuItem(value: _TileStyle.satellite, child: Text('Satellite', style: TextStyle(color: Colors.white70))),
             ],
           ),
           if (event != null)
             IconButton(
               tooltip: 'Reload overlay',
-              icon: const Icon(Icons.refresh),
+              icon: const Icon(Icons.refresh_rounded),
               onPressed: () => _loadOverlay(event.location),
             ),
         ],
@@ -181,21 +184,21 @@ class _MapScreenState extends State<MapScreen> {
                 PolygonLayer(polygons: [
                   Polygon(
                     points: polygonPoints,
-                    color: Colors.red.withOpacity(0.25),
-                    borderColor: Colors.redAccent,
+                    color: kDanger.withOpacity(0.2),
+                    borderColor: kDanger.withOpacity(0.8),
                     borderStrokeWidth: 2,
                   ),
                 ]),
               if (_showPrimary && primaryPolyline.isNotEmpty)
                 PolylineLayer(polylines: [
-                  Polyline(points: primaryPolyline, color: Colors.redAccent, strokeWidth: 3),
+                  Polyline(points: primaryPolyline, color: kDanger, strokeWidth: 4),
                 ]),
               if (_showAlternate && alternatePolyline.isNotEmpty)
                 PolylineLayer(polylines: [
                   Polyline(
                     points: alternatePolyline,
-                    color: Colors.greenAccent,
-                    strokeWidth: 3,
+                    color: kAccent,
+                    strokeWidth: 4,
                     isDotted: true,
                   ),
                 ]),
@@ -203,28 +206,40 @@ class _MapScreenState extends State<MapScreen> {
                 MarkerLayer(markers: [
                   Marker(
                     point: center,
-                    width: 40,
-                    height: 40,
-                    child: const Icon(Icons.location_pin, color: Colors.redAccent, size: 40),
+                    width: 60,
+                    height: 60,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(shape: BoxShape.circle, color: kDanger.withOpacity(0.2)),
+                        ),
+                        const Icon(Icons.location_pin, color: kDanger, size: 36),
+                      ],
+                    ),
                   ),
                 ]),
             ],
           ),
-          if (_loading) const Center(child: CircularProgressIndicator()),
+          if (_loading) const Center(child: CircularProgressIndicator(color: kPrimary)),
           if (_error != null)
             Positioned(
-              top: 8, left: 8, right: 8,
-              child: Card(
-                color: Colors.red.shade900,
-                child: Padding(
-                  padding: const EdgeInsets.all(8),
-                  child: Text(_error!, style: const TextStyle(color: Colors.white, fontSize: 12)),
+              top: 12, left: 12, right: 12,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: kDanger.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: kDanger),
+                  boxShadow: [BoxShadow(color: Colors.black45, blurRadius: 10)],
                 ),
+                padding: const EdgeInsets.all(12),
+                child: Text(_error!, style: const TextStyle(color: Colors.white, fontSize: 13)),
               ),
             ),
 
           Positioned(
-            right: 12, top: 12,
+            right: 16, top: 16,
             child: _ZoomControls(
               onZoomIn: () => _zoom(1),
               onZoomOut: () => _zoom(-1),
@@ -234,7 +249,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
 
           Positioned(
-            bottom: 24, left: 12,
+            bottom: 32, left: 16,
             child: _Legend(
               showAffected: _showAffected,
               showPrimary: _showPrimary,
@@ -251,20 +266,25 @@ class _MapScreenState extends State<MapScreen> {
             ),
           ),
 
-          if (_overlay != null)
-            Positioned(
-              bottom: 24, right: 12,
-              child: _ScaleHint(zoom: () => _mapController.camera.zoom),
-            ),
-
           if (event == null)
             Center(
-              child: Card(
-                color: const Color(0xFF141929),
-                child: const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Run the pipeline to load a crisis overlay',
-                      style: TextStyle(color: Colors.white60)),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: kCard.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kCardBorder),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 20)],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.map_rounded, color: Colors.white24, size: 42),
+                    const SizedBox(height: 12),
+                    const Text('No Map Data', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 4),
+                    const Text('Run the pipeline to load a crisis overlay', style: TextStyle(color: Colors.white38, fontSize: 13)),
+                  ],
                 ),
               ),
             ),
@@ -273,10 +293,11 @@ class _MapScreenState extends State<MapScreen> {
       floatingActionButton: event != null
           ? FloatingActionButton.extended(
               onPressed: () => _runSimulation(context, state),
-              backgroundColor: const Color(0xFF00D4FF),
-              foregroundColor: const Color(0xFF0A0E1A),
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('RUN SIMULATION'),
+              backgroundColor: kPrimary,
+              foregroundColor: kBg,
+              elevation: 6,
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('RUN SIMULATION', style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 1)),
             )
           : null,
     );
@@ -307,49 +328,33 @@ class _ZoomControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: const Color(0xCC141929),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    return Container(
+      decoration: glassDecoration(),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _btn(Icons.add, 'Zoom in', onZoomIn),
+          _btn(Icons.add_rounded, 'Zoom in', onZoomIn),
           _divider(),
-          _btn(Icons.remove, 'Zoom out', onZoomOut),
+          _btn(Icons.remove_rounded, 'Zoom out', onZoomOut),
           _divider(),
-          _btn(Icons.center_focus_strong, 'Recenter on crisis', onRecenter),
+          _btn(Icons.center_focus_strong_rounded, 'Recenter on crisis', onRecenter),
           _divider(),
-          _btn(Icons.fit_screen, 'Fit overlay', onFit),
+          _btn(Icons.fit_screen_rounded, 'Fit overlay', onFit),
         ],
       ),
     );
   }
 
-  Widget _divider() => Container(height: 1, width: 36, color: Colors.white12);
+  Widget _divider() => Container(height: 1, width: 32, color: Colors.white12);
 
   Widget _btn(IconData icon, String tip, VoidCallback? onTap) => SizedBox(
-        width: 40, height: 40,
+        width: 44, height: 44,
         child: IconButton(
           tooltip: tip,
           padding: EdgeInsets.zero,
-          iconSize: 18,
-          icon: Icon(icon, color: onTap == null ? Colors.white24 : Colors.white),
+          iconSize: 20,
+          icon: Icon(icon, color: onTap == null ? Colors.white24 : Colors.white70),
           onPressed: onTap,
-        ),
-      );
-}
-
-class _ScaleHint extends StatelessWidget {
-  final double Function() zoom;
-  const _ScaleHint({required this.zoom});
-
-  @override
-  Widget build(BuildContext context) => Card(
-        color: const Color(0xCC141929),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Text('z${zoom().toStringAsFixed(1)}',
-              style: const TextStyle(color: Colors.white60, fontSize: 11)),
         ),
       );
 }
@@ -375,51 +380,53 @@ class _Legend extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Card(
-        color: const Color(0xCC141929),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('LAYERS',
-                  style: TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.2)),
-              const SizedBox(height: 4),
-              if (hasAffected)
-                _LegendToggle(
-                  color: Colors.redAccent.withOpacity(0.5),
-                  label: 'Affected Area',
-                  active: showAffected,
-                  onTap: onToggleAffected,
-                ),
-              if (hasPrimary)
-                _LegendToggle(
-                  color: Colors.redAccent,
-                  label: 'Blocked Route',
-                  active: showPrimary,
-                  onTap: onTogglePrimary,
-                ),
-              if (hasAlternate)
-                _LegendToggle(
-                  color: Colors.greenAccent,
-                  label: 'Alternate Route',
-                  active: showAlternate,
-                  onTap: onToggleAlternate,
-                  dotted: true,
-                ),
-              if (hasPin)
-                _LegendToggle(
-                  color: Colors.redAccent,
-                  label: 'Crisis Pin',
-                  active: showPin,
-                  onTap: onTogglePin,
-                  isPin: true,
-                ),
-            ],
-          ),
-        ),
-      );
+  Widget build(BuildContext context) {
+    if (!hasAffected && !hasPrimary && !hasAlternate && !hasPin) return const SizedBox.shrink();
+    
+    return Container(
+      decoration: glassDecoration(opacity: 0.15),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('LAYERS',
+              style: TextStyle(color: Colors.white38, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+          const SizedBox(height: 8),
+          if (hasAffected)
+            _LegendToggle(
+              color: kDanger.withOpacity(0.5),
+              label: 'Affected Area',
+              active: showAffected,
+              onTap: onToggleAffected,
+            ),
+          if (hasPrimary)
+            _LegendToggle(
+              color: kDanger,
+              label: 'Blocked Route',
+              active: showPrimary,
+              onTap: onTogglePrimary,
+            ),
+          if (hasAlternate)
+            _LegendToggle(
+              color: kAccent,
+              label: 'Alternate Route',
+              active: showAlternate,
+              onTap: onToggleAlternate,
+              dotted: true,
+            ),
+          if (hasPin)
+            _LegendToggle(
+              color: kDanger,
+              label: 'Crisis Pin',
+              active: showPin,
+              onTap: onTogglePin,
+              isPin: true,
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _LegendToggle extends StatelessWidget {
@@ -445,26 +452,25 @@ class _LegendToggle extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
           children: [
             Opacity(
               opacity: faded,
               child: isPin
-                  ? Icon(Icons.location_pin, color: color, size: 14)
+                  ? Icon(Icons.location_pin, color: color, size: 16)
                   : dotted
                       ? _DottedLine(color: color)
-                      : Container(width: 20, height: 4, color: color),
+                      : Container(width: 20, height: 4, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 8),
             Opacity(
               opacity: faded,
-              child: Text(label,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
+              child: Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w600)),
             ),
-            const SizedBox(width: 6),
-            Icon(active ? Icons.visibility : Icons.visibility_off,
-                size: 12, color: Colors.white38),
+            const SizedBox(width: 12),
+            Icon(active ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                size: 14, color: Colors.white24),
           ],
         ),
       ),
@@ -483,7 +489,7 @@ class _DottedLine extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(
             4,
-            (_) => Container(width: 3, height: 4, color: color),
+            (_) => Container(width: 3, height: 4, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
           ),
         ),
       );

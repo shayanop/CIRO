@@ -8,33 +8,52 @@ class ApiClient {
       ? String.fromEnvironment('CIRO_API')
       : (kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000');
 
-  static Future<Map<String, dynamic>> _get(String path) async {
-    final res = await http.get(Uri.parse('$baseUrl$path'));
+  // ── Raw helpers ────────────────────────────────────────────────────────────
+
+  static Future<dynamic> _getRaw(String path) async {
+    final res = await http
+        .get(Uri.parse('$baseUrl$path'))
+        .timeout(const Duration(seconds: 10));
     if (res.statusCode >= 400) throw Exception('GET $path → ${res.statusCode}');
     return jsonDecode(res.body);
   }
 
-  static Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
-    final res = await http.post(
-      Uri.parse('$baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-    if (res.statusCode >= 400) throw Exception('POST $path → ${res.statusCode}: ${res.body}');
+  static Future<Map<String, dynamic>> _get(String path) async {
+    final raw = await _getRaw(path);
+    if (raw is Map<String, dynamic>) return raw;
+    return {'data': raw};
+  }
+
+  static Future<Map<String, dynamic>> _post(
+      String path, Map<String, dynamic> body) async {
+    final res = await http
+        .post(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode >= 400) {
+      throw Exception('POST $path → ${res.statusCode}: ${res.body}');
+    }
     return jsonDecode(res.body);
   }
 
-  static Future<Map<String, dynamic>> _patch(String path, Map<String, dynamic> body) async {
-    final res = await http.patch(
-      Uri.parse('$baseUrl$path'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
+  static Future<Map<String, dynamic>> _patch(
+      String path, Map<String, dynamic> body) async {
+    final res = await http
+        .patch(
+          Uri.parse('$baseUrl$path'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 10));
     if (res.statusCode >= 400) throw Exception('PATCH $path → ${res.statusCode}');
     return jsonDecode(res.body);
   }
 
-  // Health
+  // ── Endpoints ──────────────────────────────────────────────────────────────
+
   static Future<Map<String, dynamic>> health() => _get('/health');
 
   // Pipeline
@@ -68,16 +87,30 @@ class ApiClient {
     return runs.map((r) => Map<String, dynamic>.from(r)).toList();
   }
 
-  // Simulation
+  // Simulation — backend returns a bare JSON array, NOT a dict
   static Future<List<EmergencyTicket>> getTickets() async {
-    final j = await _get('/simulate/tickets');
-    final items = j['tickets'] as List? ?? [];
+    final raw = await _getRaw('/simulate/tickets');
+    List items;
+    if (raw is List) {
+      items = raw;
+    } else if (raw is Map) {
+      items = (raw['tickets'] ?? raw['data'] ?? []) as List;
+    } else {
+      items = [];
+    }
     return items.map((t) => EmergencyTicket.fromJson(t)).toList();
   }
 
   static Future<List<CiroAlert>> getAlerts() async {
-    final j = await _get('/simulate/alerts');
-    final items = j['alerts'] as List? ?? [];
+    final raw = await _getRaw('/simulate/alerts');
+    List items;
+    if (raw is List) {
+      items = raw;
+    } else if (raw is Map) {
+      items = (raw['alerts'] ?? raw['data'] ?? []) as List;
+    } else {
+      items = [];
+    }
     return items.map((a) => CiroAlert.fromJson(a)).toList();
   }
 
@@ -85,9 +118,14 @@ class ApiClient {
     await _patch('/simulate/tickets/$ticketId/status', {'status': status});
   }
 
+  static Future<void> resetSimulation() async {
+    await _post('/simulate/reset', {});
+  }
+
   // Maps
   static Future<MapOverlay> getCrisisOverlay(String location) async {
-    final j = await _get('/maps/crisis-overlay?location=${Uri.encodeComponent(location)}');
+    final j = await _get(
+        '/maps/crisis-overlay?location=${Uri.encodeComponent(location)}');
     return MapOverlay.fromJson(j);
   }
 
