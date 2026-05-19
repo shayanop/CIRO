@@ -43,6 +43,9 @@ const SAMPLE_SIGNALS = [
 
 /* ── State ───────────────────────────────────────────────────────── */
 let signalFeedInterval = null;
+let alertPollInterval = null;
+let alertEventSource = null;
+let lastAlertBroadcastVersion = -1;
 let pipelineRunning = false;
 let leafletMap = null;
 let mapLayers = [];
@@ -51,6 +54,7 @@ let mapLayers = [];
 document.addEventListener('DOMContentLoaded', () => {
   startClock();
   startSignalFeed();
+  startAlertBroadcast();
   initMap();
   document.getElementById('triggerBtn').addEventListener('click', handleTrigger);
   document.getElementById('resetBtn').addEventListener('click', handleReset);
@@ -91,10 +95,12 @@ function prependSignalCard(signal) {
   const sevClass = signal.severity_hint === 'high' ? 'sev-high'
     : signal.severity_hint === 'medium' ? 'sev-medium' : 'sev-low';
 
+  const eng = signal.engagement ? ` · ${Number(signal.engagement).toLocaleString()} eng` : '';
+
   card.innerHTML = `
     <div class="signal-card-header">
       <span class="signal-source">${esc(signal.source || '—')}</span>
-      <span class="signal-location">${esc(signal.location || signal.metadata?.geo || '')}</span>
+      <span class="signal-location">${esc(signal.location || signal.metadata?.geo || '')}${eng}</span>
     </div>
     <div class="signal-text">${esc(signal.content || signal.text || '')}</div>
     <span class="signal-sev ${sevClass}">${esc((signal.severity_hint || 'low').toUpperCase())}</span>
@@ -105,6 +111,48 @@ function prependSignalCard(signal) {
   // Keep only the last 5 cards
   const cards = feed.querySelectorAll('.signal-card');
   if (cards.length > 5) cards[cards.length - 1].remove();
+}
+
+/* ── Real-time alert broadcast (SSE with poll fallback) ─────────── */
+function startAlertBroadcast() {
+  if (typeof EventSource !== 'undefined') {
+    try {
+      alertEventSource = new EventSource(`${BASE_URL}/simulate/alerts/stream`);
+      alertEventSource.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          onAlertBroadcast(data);
+        } catch (_) { /* ignore parse errors */ }
+      };
+      alertEventSource.onerror = () => {
+        alertEventSource?.close();
+        alertEventSource = null;
+        startAlertPolling();
+      };
+      return;
+    } catch (_) { /* fall through to polling */ }
+  }
+  startAlertPolling();
+}
+
+function startAlertPolling() {
+  pollAlertBroadcast();
+  alertPollInterval = setInterval(pollAlertBroadcast, 2000);
+}
+
+async function pollAlertBroadcast() {
+  try {
+    const data = await get('/simulate/alerts/version');
+    onAlertBroadcast(data);
+  } catch (_) { /* backend offline */ }
+}
+
+function onAlertBroadcast(data) {
+  if (!data || data.version === lastAlertBroadcastVersion) return;
+  lastAlertBroadcastVersion = data.version;
+  (data.alerts || []).forEach((a) => {
+    addLogEntry('alert', `📢 <strong>${esc(a.target_area)}</strong> — ${a.recipients_count?.toLocaleString?.() ?? '?'} via ${esc(a.channel)}`);
+  });
 }
 
 /* ── Trigger Pipeline ────────────────────────────────────────────── */
@@ -205,6 +253,7 @@ async function handleReset() {
   try {
     await post('/simulate/reset', {});
   } catch (_) { /* ignore */ }
+  lastAlertBroadcastVersion = -1;
   resetAgentCards();
   clearCrisisPanel();
   clearSimLog();
