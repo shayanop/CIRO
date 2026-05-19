@@ -112,9 +112,9 @@ Severity-to-confidence thresholds (`confidence_to_severity`):
 
 | confidence ≥ | severity |
 |---|---|
-| 0.80 | `critical` |
-| 0.60 | `high` |
-| 0.40 | `medium` |
+| 0.75 | `critical` |
+| 0.55 | `high` |
+| 0.35 | `medium` |
 | 0.00 | `low` |
 
 ---
