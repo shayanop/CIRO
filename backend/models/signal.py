@@ -58,6 +58,11 @@ class Signal(BaseModel):
     language: Optional[str] = "en"
     severity_hint: Optional[str] = None
     keywords: List[str] = Field(default_factory=list)
+    engagement: Optional[int] = Field(
+        default=None,
+        description="Social engagement count when sourced from mock feeds",
+    )
+    metadata: Optional[dict] = Field(default=None, description="Optional source metadata")
 
 
 class SignalBatch(BaseModel):
