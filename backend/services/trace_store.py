@@ -90,21 +90,53 @@ class TraceStore:
             return self._runs[-1]
         return None
 
+    @staticmethod
+    def _summarize_run(run: Dict[str, Any]) -> Dict[str, Any]:
+        """Flatten detect/reason outputs for crisis-feed clients."""
+        summary: Dict[str, Any] = {
+            "run_id": run["run_id"],
+            "started_at": run.get("started_at"),
+            "completed_at": run.get("completed_at"),
+            "outcome": run.get("outcome"),
+            "total_duration_ms": run.get("total_duration_ms", 0),
+            "status": run.get("status"),
+            "steps_count": len(run.get("steps", [])),
+            "signal_text": run.get("signal_text"),
+        }
+        for step in run.get("steps", []):
+            agent = step.get("agent", "")
+            out = step.get("output") or {}
+            if not isinstance(out, dict):
+                continue
+            if agent == "event-detection-agent":
+                for key in (
+                    "crisis_type",
+                    "severity",
+                    "confidence",
+                    "location",
+                    "explanation",
+                    "escalated",
+                ):
+                    if key in out:
+                        summary[key] = out[key]
+            if agent == "reasoning-analysis-agent":
+                summary["analysis_summary"] = out.get("summary")
+                summary["impact"] = out.get("impact")
+                summary["urgency"] = out.get("urgency")
+        summary["steps"] = [
+            {
+                "agent": s.get("agent"),
+                "step": s.get("step"),
+                "duration_ms": s.get("duration_ms"),
+                "output": s.get("output"),
+            }
+            for s in run.get("steps", [])
+        ]
+        return summary
+
     def get_history(self, n: int = 10) -> List[Dict[str, Any]]:
-        """Return the last *n* completed run summaries."""
-        summaries = []
-        for run in self._runs[-n:]:
-            summaries.append(
-                {
-                    "run_id": run["run_id"],
-                    "started_at": run.get("started_at"),
-                    "outcome": run.get("outcome"),
-                    "total_duration_ms": run.get("total_duration_ms", 0),
-                    "status": run.get("status"),
-                    "steps_count": len(run.get("steps", [])),
-                }
-            )
-        return summaries
+        """Return the last *n* completed runs with crisis fields for the feed UI."""
+        return [self._summarize_run(run) for run in self._runs[-n:]]
 
     def reset(self) -> None:
         """Clear all trace data."""
