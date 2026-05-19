@@ -101,28 +101,42 @@ class _CrisisCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = run['steps'] as List? ?? [];
     Map<String, dynamic>? eventOut;
     Map<String, dynamic>? reasonOut;
 
-    for (final s in steps) {
-      final agent = (s['agent'] ?? '').toString();
-      final step  = (s['step']  ?? '').toString();
-      if (agent.contains('detect') || step.contains('detect')) {
-        eventOut = s['output'] as Map<String, dynamic>?;
-      }
-      if (agent.contains('reason') || step.contains('reason')) {
-        reasonOut = s['output'] as Map<String, dynamic>?;
+    if (run['crisis_type'] != null) {
+      eventOut = {
+        'crisis_type': run['crisis_type'],
+        'location': run['location'],
+        'severity': run['severity'],
+        'confidence': run['confidence'],
+        'explanation': run['explanation'],
+      };
+      reasonOut = {
+        'summary': run['analysis_summary'],
+        'impact': run['impact'],
+      };
+    } else {
+      final steps = run['steps'] as List? ?? [];
+      for (final s in steps) {
+        final agent = (s['agent'] ?? '').toString();
+        final step = (s['step'] ?? '').toString();
+        if (agent.contains('detect') || step.contains('detect')) {
+          eventOut = s['output'] as Map<String, dynamic>?;
+        }
+        if (agent.contains('reason') || step.contains('reason')) {
+          reasonOut = s['output'] as Map<String, dynamic>?;
+        }
       }
     }
 
     final crisisType = eventOut?['crisis_type'] ?? 'unknown';
-    final location   = eventOut?['location']    ?? 'Unknown';
-    final severity   = eventOut?['severity']    ?? 'low';
+    final location = eventOut?['location'] ?? 'Unknown';
+    final severity = eventOut?['severity'] ?? 'low';
     final confidence = (eventOut?['confidence'] as num?)?.toDouble() ?? 0.0;
-    final explanation= eventOut?['explanation'] ?? '';
-    final summary    = reasonOut?['summary']    ?? '';
-    final impact     = List<String>.from(reasonOut?['impact'] ?? []);
+    final explanation = eventOut?['explanation'] ?? '';
+    final summary = reasonOut?['summary'] ?? '';
+    final impact = List<String>.from(reasonOut?['impact'] ?? []);
 
     final color = severityColors[severity] ?? Colors.grey;
     final icon  = _crisisIcons[crisisType] ?? Icons.warning_rounded;

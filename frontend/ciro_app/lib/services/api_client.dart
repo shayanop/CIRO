@@ -82,9 +82,20 @@ class ApiClient {
   }
 
   static Future<List<Map<String, dynamic>>> getTraceHistory() async {
-    final j = await _get('/trace/history');
-    final runs = j['runs'] as List? ?? [];
-    return runs.map((r) => Map<String, dynamic>.from(r)).toList();
+    final raw = await _getRaw('/trace/history');
+    final List items;
+    if (raw is List) {
+      items = raw;
+    } else if (raw is Map) {
+      items = (raw['runs'] ?? raw['data'] ?? []) as List;
+    } else {
+      items = [];
+    }
+    return items.map((r) => Map<String, dynamic>.from(r)).toList();
+  }
+
+  static Future<Map<String, dynamic>> getAlertsVersion() async {
+    return _get('/simulate/alerts/version');
   }
 
   // Simulation — backend returns a bare JSON array, NOT a dict

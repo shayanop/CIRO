@@ -13,11 +13,12 @@ class AppState extends ChangeNotifier {
   List<CiroAlert> alerts = [];
   String? error;
 
-  // Real-time polling
+  // Real-time polling (alerts/tickets version endpoint)
   Timer? _pollTimer;
   bool _isPolling = false;
   int newAlertsCount = 0; // badge counter
   int _lastAlertCount = 0;
+  int _lastBroadcastVersion = -1;
 
   AppState() {
     _startPolling();
@@ -27,7 +28,7 @@ class AppState extends ChangeNotifier {
 
   void _startPolling() {
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
     _poll(); // immediate first fetch
   }
 
@@ -35,10 +36,14 @@ class AppState extends ChangeNotifier {
     if (_isPolling) return;
     _isPolling = true;
     try {
-      await Future.wait([_loadAlerts(), _loadTickets()]);
-      // detect new alerts for badge
-      if (alerts.length > _lastAlertCount) {
-        newAlertsCount += alerts.length - _lastAlertCount;
+      final version = await ApiClient.getAlertsVersion();
+      final v = (version['version'] as num?)?.toInt() ?? 0;
+      if (v != _lastBroadcastVersion) {
+        _lastBroadcastVersion = v;
+        await Future.wait([_loadAlerts(), _loadTickets()]);
+        if (alerts.length > _lastAlertCount) {
+          newAlertsCount += alerts.length - _lastAlertCount;
+        }
         _lastAlertCount = alerts.length;
         notifyListeners();
       }
@@ -161,6 +166,7 @@ class AppState extends ChangeNotifier {
       lastPipelineResult = null;
       newAlertsCount = 0;
       _lastAlertCount = 0;
+      _lastBroadcastVersion = 0;
       error = null;
       notifyListeners();
     } catch (e) {
