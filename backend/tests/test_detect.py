@@ -121,21 +121,22 @@ class TestComputeConfidence:
 # ---------------------------------------------------------------------------
 
 class TestConfidenceToSeverity:
-    def test_critical_above_80(self):
+    def test_critical_at_or_above_75(self):
         assert confidence_to_severity(0.85) == Severity.CRITICAL
         assert confidence_to_severity(1.0) == Severity.CRITICAL
+        assert confidence_to_severity(0.75) == Severity.CRITICAL
 
-    def test_high_60_to_80(self):
+    def test_high_55_to_74(self):
         assert confidence_to_severity(0.65) == Severity.HIGH
-        assert confidence_to_severity(0.79) == Severity.HIGH
+        assert confidence_to_severity(0.74) == Severity.HIGH
 
-    def test_medium_40_to_60(self):
+    def test_medium_35_to_54(self):
         assert confidence_to_severity(0.45) == Severity.MEDIUM
-        assert confidence_to_severity(0.59) == Severity.MEDIUM
+        assert confidence_to_severity(0.54) == Severity.MEDIUM
 
-    def test_low_below_40(self):
+    def test_low_below_35(self):
         assert confidence_to_severity(0.0) == Severity.LOW
-        assert confidence_to_severity(0.39) == Severity.LOW
+        assert confidence_to_severity(0.34) == Severity.LOW
 
 
 # ---------------------------------------------------------------------------

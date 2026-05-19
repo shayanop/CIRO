@@ -74,7 +74,16 @@ def test_trace_latest_endpoint_after_pipeline(client):
 
 
 def test_trace_history_endpoint(client):
-    client.post("/pipeline/run", json={"source": "social", "text": "flood G-10"})
+    client.post(
+        "/pipeline/run",
+        json={"source": "social", "text": "G-10 mein pani bhar gaya hai, gaariyan phans gayi hain"},
+    )
     r = client.get("/trace/history")
     assert r.status_code == 200
-    assert isinstance(r.json(), list)
+    hist = r.json()
+    assert isinstance(hist, list)
+    assert len(hist) >= 1
+    last = hist[-1]
+    assert last.get("crisis_type") == "flood"
+    assert last.get("severity") in ("high", "critical")
+    assert "steps" in last

@@ -35,6 +35,7 @@ def client():
     )
     import routers.simulate as simulate_module
     from services.cache import analysis_cache
+    from services import alert_broadcast
     from services.trace_store import trace_store
 
     system_state.traffic_routes = _default_routes()
@@ -45,6 +46,7 @@ def client():
     _signal_buffer.clear()
     trace_store.reset()
     analysis_cache.clear()
+    alert_broadcast.reset()
 
     with TestClient(app) as c:
         yield c

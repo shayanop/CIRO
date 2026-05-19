@@ -30,6 +30,9 @@ def test_pipeline_happy_path_urdu_flood(client):
     _assert_pipeline_shape(body)
     assert body["event"]["crisis_type"] == "flood"
     assert body["event"]["location"] == "G-10"
+    assert body["event"]["confidence"] >= 0.7
+    assert body["event"]["severity"] in ("high", "critical")
+    assert len(body["plan"]["actions"]) >= 2
 
 
 def test_pipeline_english_heatwave(client):
@@ -79,6 +82,8 @@ def test_pipeline_fire_scenario(client):
     body = r.json()
     _assert_pipeline_shape(body)
     assert body["event"]["crisis_type"] == "fire"
+    assert len(body["plan"]["actions"]) >= 1
+    assert len(body["simulation"]["alerts_sent"]) >= 1
 
 
 def test_pipeline_completes_trace_run(client):
