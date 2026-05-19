@@ -76,14 +76,16 @@ def _engagement_bonus(signals) -> float:
     """Bonus based on the single most-engaged signal."""
     best = 0
     for s in signals:
-        meta = _attr(s, "metadata", {}) or {}
-        if isinstance(meta, dict):
-            eng = meta.get("engagement") or meta.get("engagement_count") or 0
-            try:
-                eng = int(eng)
-            except (TypeError, ValueError):
-                eng = 0
-            best = max(best, eng)
+        eng = _attr(s, "engagement")
+        if eng is None:
+            meta = _attr(s, "metadata", {}) or {}
+            if isinstance(meta, dict):
+                eng = meta.get("engagement") or meta.get("engagement_count") or 0
+        try:
+            eng = int(eng or 0)
+        except (TypeError, ValueError):
+            eng = 0
+        best = max(best, eng)
     if best > 5000:
         return 0.15
     if best > 2000:
@@ -222,16 +224,36 @@ def compute_confidence_detailed(
     breakdown["traffic_corroboration_bonus"] = traffic_bonus
     breakdown["traffic_matches"] = traffic_matches
 
+    # Strong keyword evidence on the highest-severity signal in the batch
+    strong_bonus = 0.0
+    for s in signals:
+        hint = _attr(s, "severity_hint")
+        kws = _attr(s, "keywords", []) or []
+        if hint == "high" and len(kws) >= 2:
+            strong_bonus = 0.20
+            break
+        if hint == "medium" and len(kws) >= 2:
+            strong_bonus = max(strong_bonus, 0.10)
+    score += strong_bonus
+    breakdown["strong_evidence_bonus"] = strong_bonus
+
+    # Resolved location on any signal (urban crises are geo-specific)
+    if any(_attr(s, "location") for s in signals):
+        score += 0.15
+        breakdown["location_anchor_bonus"] = 0.15
+    else:
+        breakdown["location_anchor_bonus"] = 0.0
+
     return min(round(score, 2), 1.0), breakdown
 
 
 def confidence_to_severity(confidence: float) -> Severity:
     """Map confidence score to severity level."""
-    if confidence >= 0.8:
+    if confidence >= 0.75:
         return Severity.CRITICAL
-    elif confidence >= 0.6:
+    elif confidence >= 0.55:
         return Severity.HIGH
-    elif confidence >= 0.4:
+    elif confidence >= 0.35:
         return Severity.MEDIUM
     return Severity.LOW
 

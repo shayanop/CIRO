@@ -100,7 +100,9 @@ ACTION_RULES = {
         ("dispatch_fire_brigade", 1),
         ("send_alert", 2),
     ],
-    ("fire", "low"): [],
+    ("fire", "low"): [
+        ("send_alert", 1),
+    ],
     # Earthquake
     ("earthquake", "high"): [
         ("dispatch_rescue_boats", 1),

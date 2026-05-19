@@ -26,10 +26,12 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, List
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
+from fastapi.responses import StreamingResponse
 
 from models.signal import ActionPlan
 from models.simulation import Alert, EmergencyTicket, OutcomeSummary, SimulationResult
+from services import alert_broadcast
 from services.trace_store import trace_store
 from utils.logger import log_agent_step
 
@@ -77,6 +79,18 @@ class MockSystemState:
 # Module-level singleton
 system_state = MockSystemState()
 
+
+def _notify_state_change() -> None:
+    """Bump SSE / poll version when tickets or alerts change."""
+    alert_broadcast.bump()
+
+
+def _active_trace_run_id() -> str:
+    latest = trace_store.get_latest()
+    if latest and latest.get("run_id"):
+        return latest["run_id"]
+    return f"run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+
 # Store the most recent simulation for outcome queries
 _last_simulation: SimulationResult | None = None
 
@@ -105,6 +119,7 @@ def _dispatch_rescue_boats(state: MockSystemState, params: dict) -> dict:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     state.active_tickets.append(ticket)
+    _notify_state_change()
     return ticket
 
 
@@ -120,6 +135,7 @@ def _dispatch_traffic_police(state: MockSystemState, params: dict) -> dict:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     state.active_tickets.append(ticket)
+    _notify_state_change()
     return ticket
 
 
@@ -135,6 +151,7 @@ def _dispatch_ambulance(state: MockSystemState, params: dict) -> dict:
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     state.active_tickets.append(ticket)
+    _notify_state_change()
     return ticket
 
 
@@ -149,6 +166,7 @@ def _send_alert(state: MockSystemState, params: dict) -> dict:
         "recipients_count": random.randint(500, 5000),
     }
     state.sent_alerts.append(alert)
+    _notify_state_change()
     return alert
 
 
@@ -234,11 +252,12 @@ async def execute_simulation(plan: ActionPlan):
     etas = [t.eta_minutes for t in tickets_created]
     min_eta = min(etas) if etas else 0
 
-    run_id = f"run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    sim_run_id = f"sim_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+    trace_run_id = _active_trace_run_id()
     elapsed_ms = int((time.time() - start) * 1000)
 
     simulation_result = SimulationResult(
-        run_id=run_id,
+        run_id=sim_run_id,
         actions_executed=actions_executed,
         tickets_created=tickets_created,
         alerts_sent=alerts_sent,
@@ -250,10 +269,11 @@ async def execute_simulation(plan: ActionPlan):
     )
 
     _last_simulation = simulation_result
+    _notify_state_change()
 
-    # Log the trace step
+    # Log the trace step (same run_id as ingest/detect/reason/plan)
     trace_store.log_step(
-        run_id=run_id,
+        run_id=trace_run_id,
         agent="simulation-agent",
         step="execute_actions",
         input_data=plan.model_dump(mode="json"),
@@ -292,6 +312,7 @@ async def reset_state():
     system_state.open_resources.clear()
     _last_simulation = None
     trace_store.reset()
+    alert_broadcast.reset()
     return {"status": "reset", "message": "All state reset to defaults"}
 
 
@@ -307,12 +328,52 @@ async def get_alerts():
     return system_state.sent_alerts
 
 
+@router.get("/alerts/version", summary="Alert/ticket snapshot version for polling")
+async def alerts_version():
+    """Lightweight poll target — clients compare ``version`` to detect new alerts."""
+    return alert_broadcast.snapshot(
+        system_state.sent_alerts,
+        system_state.active_tickets,
+    )
+
+
+@router.get("/alerts/stream", summary="Server-Sent Events stream for alerts and tickets")
+async def alerts_stream(once: bool = False):
+    """Push alert/ticket updates to web and mobile clients in near real time."""
+
+    async def _generator():
+        async for chunk in alert_broadcast.event_stream(
+            lambda: list(system_state.sent_alerts),
+            lambda: list(system_state.active_tickets),
+            poll_interval=1.0,
+            max_events=1 if once else None,
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        _generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
 @router.patch("/tickets/{ticket_id}/status", summary="Update ticket status")
-async def update_ticket_status(ticket_id: str, status: str = "resolved"):
+async def update_ticket_status(
+    ticket_id: str,
+    status: str = "resolved",
+    body: dict | None = Body(default=None),
+):
     """Update the status of a specific emergency ticket."""
+    if body and isinstance(body, dict) and body.get("status"):
+        status = str(body["status"])
     for ticket in system_state.active_tickets:
         if ticket["ticket_id"] == ticket_id:
             ticket["status"] = status
+            _notify_state_change()
             return {"ticket_id": ticket_id, "new_status": status}
     raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
 

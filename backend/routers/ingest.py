@@ -233,16 +233,39 @@ def extract_keywords(text: str) -> List[str]:
 # Signal Processing Pipeline
 # ---------------------------------------------------------------------------
 
+def _engagement_from_raw(raw: RawSignalInput) -> Optional[int]:
+    """Pull engagement count from metadata or mock-style top-level fields."""
+    meta = raw.metadata or {}
+    for key in ("engagement", "engagement_count"):
+        val = meta.get(key)
+        if val is not None:
+            try:
+                return int(val)
+            except (TypeError, ValueError):
+                pass
+    return None
+
+
 def process_signal(raw: RawSignalInput) -> Signal:
     """Run the full normalisation pipeline on a single raw signal."""
     language = detect_language(raw.text)
     location = extract_location(raw.text)
     severity = tag_severity(raw.text)
     keywords = extract_keywords(raw.text)
+    meta = dict(raw.metadata) if raw.metadata else {}
 
     # Override location from metadata if provided
-    if not location and raw.metadata and raw.metadata.get("geo"):
-        location = raw.metadata["geo"]
+    if not location and meta.get("geo"):
+        location = str(meta["geo"])
+
+    # Promote severity when mock/weather metadata says so
+    meta_sev = str(meta.get("severity", "")).lower()
+    if meta_sev in {"critical", "high"} and severity != "high":
+        severity = "high"
+    elif meta_sev == "medium" and severity == "low":
+        severity = "medium"
+
+    engagement = _engagement_from_raw(raw)
 
     return Signal(
         signal_id=f"sig_{uuid.uuid4().hex[:8]}",
@@ -253,6 +276,8 @@ def process_signal(raw: RawSignalInput) -> Signal:
         language=language,
         severity_hint=severity,
         keywords=keywords,
+        engagement=engagement,
+        metadata=meta or None,
     )
 
 
@@ -318,6 +343,15 @@ async def ingest_signal(raw: RawSignalInput):
     return batch
 
 
+_AUTO_INGEST_MAX = 4  # cap new signals per call so the ring buffer stays demo-focused
+
+
+def _matches_location_filter(text: str, location_filter: Optional[str]) -> bool:
+    if not location_filter:
+        return True
+    return location_filter.lower() in text.lower()
+
+
 @router.post("/auto", response_model=SignalBatch, summary="Auto-ingest from weather + traffic mocks")
 async def ingest_auto(location_filter: Optional[str] = None):
     """Pull simulated weather alerts and blocked traffic routes, normalise
@@ -325,7 +359,8 @@ async def ingest_auto(location_filter: Optional[str] = None):
 
     Used by the demo to trigger multi-source corroboration in the Event
     Detection Agent without needing hand-crafted POSTs.  Optionally filter
-    by ``location_filter`` substring (e.g. "Karachi") to scope the signals.
+    by ``location_filter`` substring (e.g. "G-10" or "Karachi") to scope
+    the signals.  At most ``_AUTO_INGEST_MAX`` new signals are added per call.
     """
     import json
     from pathlib import Path
@@ -335,48 +370,80 @@ async def ingest_auto(location_filter: Optional[str] = None):
 
     data_dir = Path(__file__).resolve().parent.parent / "data"
     raw_inputs: List[RawSignalInput] = []
+    filt = (location_filter or "").strip()
 
-    # ── Weather alerts → signals ──────────────────────────────────────────
+    # ── Weather alerts → signals (max 2) ───────────────────────────────────
     try:
         weather = json.loads((data_dir / "weather_mock.json").read_text(encoding="utf-8"))
+        weather_candidates: List[RawSignalInput] = []
         for alert in weather.get("alerts", []):
+            event = str(alert.get("event", ""))
+            description = str(alert.get("description", ""))
             for region in alert.get("regions", []):
-                if location_filter and location_filter.lower() not in region.lower():
+                region_s = str(region)
+                blob = f"{region_s} {event} {description}"
+                if not _matches_location_filter(blob, filt or None):
                     continue
-                raw_inputs.append(
+                weather_candidates.append(
                     RawSignalInput(
                         source="weather",
-                        text=f"{alert.get('event', 'Weather Alert')} in {region}: {alert.get('description', '')}",
-                        metadata={"geo": region, "severity": alert.get("severity")},
+                        text=f"{event} in {region_s}: {description}",
+                        metadata={
+                            "geo": region_s,
+                            "severity": alert.get("severity"),
+                        },
                     )
                 )
+        raw_inputs.extend(weather_candidates[:2])
     except Exception:
         pass
 
-    # ── Traffic blocked routes → signals ─────────────────────────────────
+    # ── Traffic blocked routes → signals (max 2) ───────────────────────────
     try:
         traffic = json.loads((data_dir / "traffic_mock.json").read_text(encoding="utf-8"))
+        traffic_candidates: List[RawSignalInput] = []
         for route in traffic.get("routes", []):
             if route.get("status") != "blocked":
                 continue
             city = route.get("city", "")
             name = route.get("name", "")
-            if location_filter and location_filter.lower() not in (city + " " + name).lower():
+            blob = f"{name} {city}"
+            if not _matches_location_filter(blob, filt or None):
                 continue
             incident = route.get("incident") or "blockage"
-            raw_inputs.append(
+            traffic_candidates.append(
                 RawSignalInput(
                     source="traffic",
-                    text=f"{name} ({city}) is blocked. Incident: {incident}. Travel time {route.get('travel_time_min', 0)} min vs normal {route.get('normal_time_min', 0)} min.",
-                    metadata={"geo": name, "city": city},
+                    text=(
+                        f"{name} ({city}) is blocked. Incident: {incident}. "
+                        f"Travel time {route.get('travel_time_min', 0)} min vs normal "
+                        f"{route.get('normal_time_min', 0)} min."
+                    ),
+                    metadata={"geo": name, "city": city, "severity": "high"},
                 )
             )
+        raw_inputs.extend(traffic_candidates[:2])
     except Exception:
         pass
 
-    # ── Process each → buffer → batch ─────────────────────────────────────
+    # Without a filter, add a small default corroboration set for Islamabad floods
+    if not filt and not raw_inputs:
+        raw_inputs = [
+            RawSignalInput(
+                source="weather",
+                text="Heavy Rainfall Warning in Islamabad: Flash flooding possible in G-10",
+                metadata={"geo": "G-10", "severity": "high"},
+            ),
+            RawSignalInput(
+                source="traffic",
+                text="Kashmir Highway (Islamabad) is blocked. Incident: water main burst.",
+                metadata={"geo": "Kashmir Highway", "city": "Islamabad", "severity": "high"},
+            ),
+        ]
+
+    # ── Process capped list → buffer → batch ────────────────────────────────
     new_signals: List[Signal] = []
-    for raw in raw_inputs:
+    for raw in raw_inputs[:_AUTO_INGEST_MAX]:
         signal = process_signal(raw)
         new_signals.append(signal)
         _signal_buffer.append(signal)

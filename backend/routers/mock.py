@@ -13,6 +13,8 @@ from pathlib import Path
 
 from fastapi import APIRouter
 
+from routers.ingest import extract_keywords, tag_severity
+
 router = APIRouter(prefix="/mock", tags=["Mock Data"])
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
@@ -41,8 +43,19 @@ def _get_traffic_data() -> dict:
 @router.get("/social", summary="Random mock social media signal")
 async def get_social_signal():
     """Return one random social media signal from the mock pool."""
-    signals = _get_social_signals()
-    return random.choice(signals)
+    raw = random.choice(_get_social_signals())
+    text = raw.get("text") or raw.get("content") or ""
+    return {
+        **raw,
+        "source": raw.get("source", "social"),
+        "content": text,
+        "text": text,
+        "location": raw.get("location"),
+        "language": raw.get("language", "en"),
+        "severity_hint": tag_severity(text),
+        "keywords": extract_keywords(text),
+        "engagement": raw.get("engagement"),
+    }
 
 
 @router.get("/weather", summary="Mock weather alert JSON")
