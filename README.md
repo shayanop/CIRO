@@ -318,7 +318,6 @@ See [`docs/QA_METRICS.md`](docs/QA_METRICS.md).
 | [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) | Endpoint reference with examples |
 | [`docs/QA_METRICS.md`](docs/QA_METRICS.md) | Test counts, thresholds, alert mechanisms |
 | [`docs/Assumptions.md`](docs/Assumptions.md) | Mock boundaries and demo caveats |
-| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | 3–5 minute demo script |
 | [`Plans/`](Plans/) | Team sprint plans (implementation + final sprint) |
 
 ---
