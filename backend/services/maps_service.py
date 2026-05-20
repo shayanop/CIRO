@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.parse
+import urllib.request
 from functools import lru_cache
 from pathlib import Path
 
@@ -78,19 +80,69 @@ def _load_overlay_file(filename: str) -> dict:
         return json.load(f)
 
 
+_geocode_cache: dict[str, dict] = {}
+
+
+def _geocode(location: str) -> dict | None:
+    """Query Nominatim (OSM) for coordinates of *location*. Returns {lat, lng} or None."""
+    if location in _geocode_cache:
+        return _geocode_cache[location]
+    try:
+        params = urllib.parse.urlencode({"q": location, "format": "json", "limit": 1})
+        req = urllib.request.Request(
+            f"https://nominatim.openstreetmap.org/search?{params}",
+            headers={"User-Agent": "CIRO-App/1.0 (crisis-intelligence)"},
+        )
+        with urllib.request.urlopen(req, timeout=6) as r:
+            results = json.loads(r.read())
+        if results:
+            coords = {"lat": float(results[0]["lat"]), "lng": float(results[0]["lon"])}
+            _geocode_cache[location] = coords
+            return coords
+    except Exception:
+        pass
+    return None
+
+
 def get_overlay(location: str) -> dict:
     """Return the GeoJSON overlay for *location*.
 
     Lookup order:
-      1. JSON file in /data (g-10, george town)
-      2. Inline hardcoded dict (shahrah-e-faisal)
-      3. Default fallback
+      1. Exact key match against JSON files in /data
+      2. Partial/fuzzy match (overlay key contained in location string)
+      3. Inline hardcoded dict
+      4. Nominatim geocode → pin-only overlay with real coordinates
+      5. Default fallback (Islamabad)
     """
     key = location.strip().lower()
-    filename = _OVERLAY_FILES.get(key)
-    if filename:
-        return _load_overlay_file(filename)
-    return _INLINE_OVERLAYS.get(key, _DEFAULT_OVERLAY)
+
+    # 1. Exact match
+    if key in _OVERLAY_FILES:
+        return _load_overlay_file(_OVERLAY_FILES[key])
+
+    # 2. Fuzzy match — overlay key is a substring of the location (e.g. "g-10" in "g-10, islamabad")
+    for overlay_key, filename in _OVERLAY_FILES.items():
+        if overlay_key in key:
+            return _load_overlay_file(filename)
+
+    # 3. Inline overlays (exact then fuzzy)
+    if key in _INLINE_OVERLAYS:
+        return _INLINE_OVERLAYS[key]
+    for overlay_key, data in _INLINE_OVERLAYS.items():
+        if overlay_key in key:
+            return data
+
+    # 4. Nominatim geocoding — real coordinates for any location string
+    coords = _geocode(location)
+    if coords:
+        return {
+            **_DEFAULT_OVERLAY,
+            "location": location,
+            "crisis_pin": coords,
+        }
+
+    # 5. Hardcoded fallback
+    return {**_DEFAULT_OVERLAY, "location": location}
 
 
 @lru_cache(maxsize=1)
