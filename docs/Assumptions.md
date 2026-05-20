@@ -1,77 +1,92 @@
-# CIRO – Assumptions & Boundaries
+# CIRO — Assumptions & Boundaries
 
-This document lists the simulation boundaries, mock-data assumptions, and API limitations that the CIRO hackathon build operates under. It exists so reviewers know what is **real engineering** vs. **scoped-down demo behaviour**.
-
----
-
-## Simulation Boundaries
-
-- **No real signal ingestion.** Social, weather, and traffic feeds are simulated by `/mock/social`, `/mock/weather`, `/mock/traffic`. None of these reach external services.
-- **No persistence.** All state (signals, events, tickets, alerts, world state, trace store) lives in process memory. Restarting the FastAPI server resets the system. `/simulate/reset` performs an in-memory reset.
-- **Single-tenant, single-process.** No user accounts, no auth, one Uvicorn worker. Concurrency is not designed for.
-- **Pakistani urban scope only.** Locations and the bilingual gazetteer are hard-coded for Pakistani sectors (G-10, Shahrah-e-Faisal, Constitution Avenue, etc.). The system will not recognise locations outside this list.
-- **Bilingual but bounded.** Language detection covers Urdu (Arabic script) and English. Urdu romanised in Latin script (`pani`, `garmi`) is handled via the keyword gazetteer, not via a real NLP model.
+What is **real engineering** vs **scoped demo behaviour** for reviewers and new contributors.
 
 ---
 
-## Mock Data Assumptions
+## Simulation boundaries
 
-- **Five demo scenarios are first-class.** The reasoning agent has a cached `CrisisAnalysis` for each of: Urdu flood (G-10), English heatwave, multi-source flood, road blockage, low-confidence single-signal. Other inputs may produce degraded analyses.
-- **Maps.** Google Maps responses are pre-saved GeoJSON files served from `/maps/crisis-overlay`. We do not hit the live Maps API during the demo (quota + offline-recording safety).
-- **Weather/traffic baselines.** Mock endpoints return a fixed baseline shape; "anomalies" are flipped on by demo control endpoints rather than generated stochastically.
-- **Affected-population numbers** are deterministic functions of severity and location, not real census data.
-- **Tickets and alerts** are pure in-memory objects. They are not sent to any real dispatch system.
-
----
-
-## LLM / Gemini Assumptions
-
-- Gemini 1.5 Pro is invoked **through Antigravity**, not from Python directly. If Antigravity is unreachable, the Reasoning agent falls back to the cached response keyed by `(crisis_type, severity)`.
-- Gemini is **only** used by the Reasoning agent. The other four agents are deterministic.
-- Token cost is not optimised — prompts include the full signal text and event JSON.
-- Schema enforcement on the LLM output is done by Antigravity's structured-output validator. We do not retry malformed outputs; we fall back to cache.
+- **No persistence.** Signals, events, tickets, alerts, world state, and trace history live in process memory. Restarting Uvicorn or calling `/simulate/reset` clears everything.
+- **Single-tenant, single-process.** No auth, no rate limits, one worker — designed for demo and pytest, not production load.
+- **Pakistani urban scope.** Location gazetteer covers sectors and named roads (G-10, I-9, Shahrah-e-Faisal, Jacobabad, Karachi, …). Unknown locations fall back to `"Unknown"`.
+- **Bilingual, bounded.** Urdu (Arabic script) and English detection; romanised Urdu keywords (`pani`, `aag`) via gazetteer, not a full NLP stack.
 
 ---
 
-## Antigravity Assumptions
+## Mock vs live data
 
-- The agent graph is configured in Antigravity once (Day 2) and is not regenerated from code. If the underlying schemas change, the graph must be re-saved manually.
-- Each edge expects strictly-typed JSON. Adding a non-optional field to a schema is a breaking change to the edge.
-- Antigravity's trace tab is the **canonical** trace. Our `TraceStore` is a mirror used so the mobile/web UIs do not need to call Antigravity directly.
+| Source | Behaviour |
+|--------|-----------|
+| `/mock/social`, `/mock/weather`, `/mock/traffic` | Fully simulated JSON |
+| `/ingest/auto` | Pulls from mock files; caps signals; optional `location_filter` |
+| `/pipeline/auto` | **Partially live** — wttr.in temperatures + Dawn/ARY RSS; season fallback if offline |
+| `/maps/crisis-overlay` | Pre-authored GeoJSON in `backend/data/` |
+| Tickets & alerts | In-memory only; not sent to real dispatch systems |
 
----
-
-## API Limitations
-
-- All endpoints respond < 500 ms under demo load (single user, hot-cached scenarios). They are not load-tested.
-- No rate limiting, no API keys on the FastAPI side.
-- Trace history is capped at the **last 10 runs** in memory.
-- `/simulate/state` returns the full world dict; it is not paginated.
+Population figures and congestion deltas are **deterministic functions** of severity/location, not census or live traffic APIs.
 
 ---
 
-## Mobile App Assumptions
+## LLM assumptions
 
-- The Flutter app targets **Android** as the primary demo platform. iOS builds are not validated.
-- The app talks to a backend at `http://<demo-host>:8000`. There is no service-discovery or production base-URL switching.
-- The Map screen renders crisis overlays from `/maps/crisis-overlay` — it does not consume the live Google Maps SDK during the demo.
+| Path | When used |
+|------|-----------|
+| **Groq** | `POST /reason/analyse` when `GROQ_API_KEY` is set |
+| **Fallback cache** | Always available per `(crisis_type, severity)` |
+| **Gemini / ADK** | Antigravity agent workflow (`adk web agents`) |
 
----
-
-## What is NOT Mocked (genuinely real)
-
-To make the engineering trade-off explicit, these parts are real, not simulated:
-
-- The five-agent **orchestration in Antigravity** is real and produces real traces.
-- The **Gemini 1.5 Pro** reasoning call is real (with cache fallback).
-- The **FastAPI backend, Pydantic schemas, and trace store** are real Python code.
-- The **Flutter app screens** are real, render real backend data, and handle real state transitions.
-- The **bilingual signal normalisation** (language detect + keyword extraction + location resolution) runs real logic on real input text.
+Without any API keys, all **scripted demo scenarios** still complete with cached reasoning. Token usage is not optimised for cost.
 
 ---
 
-## Known Demo Caveats
+## Antigravity / ADK assumptions
 
-- If the demo host loses internet, the Reasoning agent's cached fallback covers all five scripted scenarios, so the pipeline still completes.
-- The Antigravity trace tab and our `TraceStore` are eventually consistent — there is a small window during a run where `/trace/latest` may return the previous run. Demo timing accounts for this.
-- All timestamps are UTC. The UI does not localise to PKT.
+- FastAPI routes are the **source of truth** for agent behaviour; ADK tools are thin HTTP wrappers.
+- The workflow graph in Antigravity should match the five-step order: ingest → detect → reason → plan → simulate.
+- `TraceStore` mirrors execution for mobile/web; Antigravity’s own trace tab may differ slightly in timing.
+
+---
+
+## API limitations
+
+- Trace history capped at **10 runs**.
+- `/simulate/tickets` and `/simulate/alerts` return **bare arrays** (clients must not assume a wrapper object).
+- `/simulate/alerts/stream` is infinite unless `?once=true` is passed.
+- Endpoints target **&lt; 500 ms** under single-user demo load; not load-tested.
+
+---
+
+## Mobile app assumptions
+
+- Primary demo target: **Android** (emulator `10.0.2.2:8000`, physical device via LAN IP).
+- Server URL stored in `SharedPreferences`; no automatic cloud discovery.
+- Map screen uses backend GeoJSON overlays, not live Google Maps SDK tiles in-app.
+- Alert polling interval: **2 seconds** on `/simulate/alerts/version`.
+
+---
+
+## Web dashboard assumptions
+
+- Served as static files from FastAPI `/web` mount.
+- Signal feed polls `/mock/social` on an interval; pipeline triggered manually or from UI.
+- SSE preferred for alerts; falls back to version polling on connection error.
+
+---
+
+## What is genuinely real
+
+- FastAPI + Pydantic pipeline and **139 automated tests**
+- Bilingual normalisation and detection heuristics on real input text
+- Groq reasoning when configured
+- ADK SequentialAgent calling the same endpoints as production clients
+- Flutter UI driven by live API responses (not hard-coded demo screens)
+- Optional live weather/RSS scanner for `/pipeline/auto`
+
+---
+
+## Known demo caveats
+
+- Internet loss: reasoning cache + mock overlays keep the five scripted scenarios working.
+- `/trace/latest` may briefly show the previous run mid-pipeline; wait for completion before demoing trace.
+- Timestamps are UTC; UI does not convert to PKT.
+- `POST /pipeline/run` clears the ingest buffer so each one-shot run is isolated.

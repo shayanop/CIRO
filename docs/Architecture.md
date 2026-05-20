@@ -1,105 +1,160 @@
-# CIRO – System Architecture
+# CIRO — System Architecture
 
 ## Overview
 
-CIRO (Crisis Intelligence & Response Orchestrator) is an agentic AI system that detects urban crises in Pakistani cities and produces coordinated response plans. It is composed of five specialised agents executed sequentially through **Google Antigravity**.
+CIRO (Crisis Intelligence & Response Orchestrator) detects urban crises in Pakistani cities and produces coordinated response plans through a **five-agent sequential pipeline**. A single FastAPI process exposes each agent as REST endpoints; clients include the **web dashboard**, **Flutter app**, and **Google ADK SequentialAgent** (`backend/agents/ciro_pipeline.py`).
 
-The system is split into five logical layers. Data flows top-down: a raw signal enters at the Ingestion layer and exits as a simulated outcome at the Simulation layer, with the full trace surfaced back to the user.
-
----
-
-## The Five Layers
-
-### 1. Signal Ingestion Layer
-- **Owner agent**: Signal Ingestion Agent
-- **Input**: Raw text/JSON from social feeds, weather APIs, traffic feeds (mock sources for the hackathon)
-- **Responsibility**: Normalise heterogeneous input into a canonical `SignalBatch`. Detect language (Urdu/English), extract location tokens, tag a coarse severity hint.
-- **Output**: `SignalBatch` (list of normalised `Signal` records with `source`, `text`, `language`, `location`, `severity_hint`, `timestamp`).
-
-### 2. Event Detection Layer
-- **Owner agent**: Event Detection Agent
-- **Input**: `SignalBatch`
-- **Responsibility**: Cluster signals by location and topic, score confidence using multi-source corroboration, classify the crisis type (Flood / Heatwave / Blockage / Accident) and severity (LOW → MEDIUM → HIGH → CRITICAL).
-- **Output**: `CrisisEvent` (type, location, severity, confidence, contributing_signal_ids).
-
-### 3. Reasoning & Analysis Layer
-- **Owner agent**: Reasoning & Analysis Agent (Gemini 1.5 Pro via Antigravity)
-- **Input**: `CrisisEvent`
-- **Responsibility**: Produce structured reasoning: impact bullets, affected population estimate, infrastructure-at-risk list, urgency level, recommended response themes. Falls back to a cached response if the model call fails.
-- **Output**: `CrisisAnalysis` (impact, affected_population, infrastructure_at_risk, urgency, summary).
-
-### 4. Action Planning Layer
-- **Owner agent**: Action Planning Agent
-- **Input**: `CrisisAnalysis` + the originating `CrisisEvent`
-- **Responsibility**: Map (crisis_type × severity) to a concrete list of executable actions (e.g. `reroute_traffic`, `dispatch_rescue_boats`, `send_flood_alert`, `open_relief_camp`). Each action has parameters resolved from the analysis.
-- **Output**: `ActionPlan` (ordered list of `Action` records).
-
-### 5. Simulation Layer
-- **Owner agent**: Simulation Engine Agent
-- **Input**: `ActionPlan`
-- **Responsibility**: Apply each action to an in-memory mock world. Snapshot the world before and after. Create `EmergencyTicket` and `Alert` objects. Compute outcome metrics: congestion delta, ETA, alerts dispatched.
-- **Output**: `SimulationResult` (before, after, tickets, alerts, metrics).
+Data flows top-down: raw signal → `SignalBatch` → `CrisisEvent` → `CrisisAnalysis` → `ActionPlan` → `SimulationResult`, with every step logged to `TraceStore` and alert changes broadcast to UIs.
 
 ---
 
-## End-to-End Data Flow
+## The five layers
+
+### 1. Signal Ingestion
+
+| | |
+|---|---|
+| **Router** | `backend/routers/ingest.py` |
+| **Input** | `RawSignalInput` (social / weather / traffic text or JSON) |
+| **Output** | `SignalBatch` |
+
+Responsibilities: language detection (Urdu script vs English), bilingual keyword extraction, location resolution (G-10, Shahrah-e-Faisal, Jacobabad, …), severity hints, engagement/metadata passthrough, in-memory signal buffer.
+
+Special endpoints:
+
+- `POST /ingest/auto` — mock weather + traffic corroboration (capped, location-aware)
+- `POST /ingest/clear` — reset buffer
+
+### 2. Event Detection
+
+| | |
+|---|---|
+| **Router** | `backend/routers/detect.py` |
+| **Input** | `SignalBatch` |
+| **Output** | `CrisisEvent` |
+
+Responsibilities: classify among **8 crisis types**, compute confidence from keyword density, cross-source corroboration, traffic anomaly, engagement bonus, strong-evidence and location-anchor bonuses, optional escalation from prior events. Map confidence to severity via `confidence_to_severity` (0.75 / 0.55 / 0.35 thresholds).
+
+### 3. Reasoning & Analysis
+
+| | |
+|---|---|
+| **Router** | `backend/routers/reason.py` |
+| **Input** | `CrisisEvent` |
+| **Output** | `CrisisAnalysis` |
+
+Responsibilities: structured impact bullets, population estimate, infrastructure risk, urgency, summary. Primary path: **Groq** (`GROQ_API_KEY`). Fallback: deterministic cache per `(crisis_type, severity)` so demos never block.
+
+### 4. Action Planning
+
+| | |
+|---|---|
+| **Router** | `backend/routers/plan.py` |
+| **Input** | `CrisisEvent` + `CrisisAnalysis` |
+| **Output** | `ActionPlan` |
+
+Responsibilities: map `(crisis_type, severity)` to executable actions (`reroute_traffic`, `dispatch_rescue_boats`, `send_alert`, `open_relief_camp`, …).
+
+### 5. Simulation
+
+| | |
+|---|---|
+| **Router** | `backend/routers/simulate.py` |
+| **Input** | `ActionPlan` |
+| **Output** | `SimulationResult` |
+
+Responsibilities: apply actions to in-memory world state, create `EmergencyTicket` and `CiroAlert` records, compute congestion/ETA metrics, notify **`alert_broadcast`** (version counter + SSE).
+
+---
+
+## Orchestration paths
 
 ```
-Raw signal (Urdu/English text or JSON)
-        │
-        ▼
-[1] Signal Ingestion Agent   ──►  SignalBatch
-        │
-        ▼
-[2] Event Detection Agent    ──►  CrisisEvent
-        │
-        ▼
-[3] Reasoning Agent (Gemini) ──►  CrisisAnalysis
-        │
-        ▼
-[4] Action Planning Agent    ──►  ActionPlan
-        │
-        ▼
-[5] Simulation Agent         ──►  SimulationResult
-        │
-        ▼
-   TraceStore ──► /trace/latest ──► Mobile + Web UIs
+┌─────────────────────────────────────────────────────────────┐
+│                     POST /pipeline/run                       │
+│  (ingest → detect → reason → plan → simulate → complete_run) │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                     POST /pipeline/auto                      │
+│  live_scanner → pick signal → pipeline/run                   │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│              ADK SequentialAgent (ciro_pipeline.py)          │
+│  tool: ingest → detect → reason → plan → simulate            │
+│  each tool = httpx POST to same FastAPI routes               │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-Every agent step is appended to a `TraceStore` keyed by `run_id`, so the full reasoning chain is queryable via REST after each run.
+---
+
+## Real-time alert broadcast
+
+`backend/services/alert_broadcast.py` maintains a monotonic **version** incremented whenever tickets or alerts change.
+
+| Consumer | Mechanism |
+|----------|-----------|
+| Web | `EventSource` → `/simulate/alerts/stream`; fallback poll `/simulate/alerts/version` every 2s |
+| Flutter | Poll `/simulate/alerts/version` every 2s; refresh tickets/alerts on change |
 
 ---
 
-## Antigravity's Role
+## Trace system
 
-Antigravity is the **orchestration substrate** — CIRO does not chain agents manually in Python. Instead:
+`backend/services/trace_store.py` stores per-run steps (agent name, step id, input/output JSON, duration).  
 
-- Each FastAPI endpoint is registered as a **tool** inside Antigravity.
-- Antigravity's **workflow editor** defines the agent graph (which agent feeds which, and the JSON schema of each edge).
-- Antigravity invokes **Gemini 1.5 Pro** inside the Reasoning agent — the LLM call is not made directly from Python.
-- Antigravity's **trace tab** is the source of truth for what each agent received and produced; our `TraceStore` mirrors this for the mobile app.
-- **State passing** between agents uses Pydantic-validated JSON; Antigravity enforces the schema at each edge.
-
-Why Antigravity rather than a hand-rolled orchestrator: it accounts for 25% of the hackathon score, gives us free per-step tracing, and lets the team iterate on the agent graph visually without code changes.
+| Endpoint | Use |
+|----------|-----|
+| `GET /trace/latest` | Full step list for debugging and web trace panel |
+| `GET /trace/history` | Last 10 runs with enriched crisis summaries for mobile Crisis feed |
 
 ---
 
-## Component Boundaries
+## Maps layer
 
-| Surface | Tech | Owner |
-|---|---|---|
-| Backend API | FastAPI + Pydantic | Hasnain / Arshman |
-| Agents | Antigravity workflow + registered FastAPI tools | Anas |
-| AI reasoning | Gemini 1.5 Pro via Antigravity | Arshman |
-| Trace store + logger | Python in-memory + structlog | Shayan |
-| Web dashboard | Served at `/web` by FastAPI | Hasnain |
-| Mobile app | Flutter 3 | Saad |
+`backend/routers/maps.py` serves **file-backed GeoJSON** from `backend/data/*_overlay.json` — no live Maps API required for overlays. Optional `GET /maps/static-map` builds a Google Static Maps URL when `GOOGLE_MAPS_API_KEY` is set.
 
 ---
 
-## Non-Goals (this hackathon)
+## Live signal scanner
 
-- No persistence layer — all state is in-memory and reset by `/simulate/reset`.
-- No real social/weather/traffic ingestion — endpoints under `/mock/*` return canned data.
-- No authentication — single-tenant demo scope.
-- No horizontal scaling — single FastAPI process.
+`backend/services/live_scanner.py` (used by `/pipeline/auto`):
+
+1. **wttr.in** — real temperatures for Pakistani cities (heatwave thresholds)
+2. **Dawn / ARY RSS** — crisis-related headlines
+3. **Season-aware fallback** — when network sources fail
+
+This is partial real-world ingestion; detection/plan/simulation remain the same pipeline.
+
+---
+
+## Component ownership
+
+| Surface | Tech | Primary owner |
+|---------|------|----------------|
+| FastAPI backend | Python, Pydantic | Anas / Arshman / Hasnain |
+| ADK agents | `google-adk`, Gemini tools | Anas |
+| Reasoning LLM | Groq + cache | Arshman |
+| Trace + structlog | Python services | Shayan |
+| Web dashboard | HTML/CSS/JS, Leaflet | Hasnain |
+| Flutter app | Dart, Provider | Saad |
+| Docs & QA scripts | Markdown, pytest | Shayan / Anas |
+
+---
+
+## Non-goals (hackathon scope)
+
+- No database — in-memory state only; restart or `/simulate/reset` clears everything
+- No authentication or multi-tenancy
+- No production-scale load testing
+- Social/weather/traffic mocks under `/mock/*`; live scanner is best-effort
+
+---
+
+## Related documents
+
+- [`PIPELINE_CONTRACT.md`](PIPELINE_CONTRACT.md) — JSON schemas
+- [`API_REFERENCE.md`](API_REFERENCE.md) — HTTP reference
+- [`AgentDesign.md`](AgentDesign.md) — per-agent logic
+- [`QA_METRICS.md`](QA_METRICS.md) — test and latency targets

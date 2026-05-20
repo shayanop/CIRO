@@ -2,7 +2,7 @@
 
 This document is the contract for each of the five agents in the CIRO pipeline. For every agent it specifies: input schema, output schema, tools used, decision logic, and how handoff to the next agent occurs.
 
-All schemas are Pydantic v2 models defined in `backend/schemas/`. Agent endpoints live in `backend/routers/`. All agents call `trace_store.log_step()` at entry and exit.
+All schemas are Pydantic v2 models defined in `backend/models/`. Agent endpoints live in `backend/routers/`. All agents call `trace_store.log_step()` at entry and exit.
 
 ---
 
@@ -60,7 +60,7 @@ The full `SignalBatch` JSON is passed as `input.signal_batch` on the Antigravity
 ```json
 {
   "event_id": "evt_<timestamp>",
-  "crisis_type": "FLOOD|HEATWAVE|BLOCKAGE|ACCIDENT",
+  "crisis_type": "flood|heatwave|blockage|accident|fire|earthquake|storm|infrastructure",
   "location": "string",
   "severity": "LOW|MEDIUM|HIGH|CRITICAL",
   "confidence": 0.0,
@@ -78,13 +78,21 @@ Three heuristics, summed into a confidence score in [0, 1]:
 2. **Cross-source corroboration** — +0.25 if signals come from ≥2 distinct sources (social + weather, etc.).
 3. **Traffic anomaly** — +0.2 if a traffic signal reports >2× baseline congestion at the same location.
 
-Plus a flat +0.15 multi-source bonus and +0.10 severity boost on `high` hints.
+Additional bonuses (current implementation):
 
-Severity ladder:
-- `confidence < 0.5` → LOW
-- `0.5 ≤ c < 0.7` → MEDIUM
-- `0.7 ≤ c < 0.85` → HIGH
-- `c ≥ 0.85` → CRITICAL
+- **Engagement** — from `signal.engagement` and metadata
+- **Strong evidence** — +0.20 when high severity hint and ≥2 keywords
+- **Location anchor** — +0.15 when any signal resolves a known location
+- **Multi-source / traffic anomaly** — corroboration across social, weather, traffic
+
+Severity ladder (`confidence_to_severity`):
+
+| Confidence ≥ | Severity |
+|--------------|----------|
+| 0.75 | CRITICAL |
+| 0.55 | HIGH |
+| 0.35 | MEDIUM |
+| &lt; 0.35 | LOW |
 
 The crisis_type is the keyword bucket with the highest count; ties broken by source priority (weather > traffic > social for floods/heatwaves; traffic > social for blockages).
 
@@ -112,12 +120,14 @@ The crisis_type is the keyword bucket with the highest count; ties broken by sou
 
 ### Tools used
 - `POST /reason/analyse`.
-- **Gemini 1.5 Pro** via Antigravity (model invocation is configured in the workflow, not in Python).
+- **Groq** (`llama-3.3-70b-versatile`) when `GROQ_API_KEY` is set in `backend/.env`.
+- **Gemini** via Google ADK / Antigravity when running `backend/agents/ciro_pipeline.py` in the ADK UI.
 
 ### Decision logic
-1. Build a structured prompt that includes the `CrisisEvent` and the contributing signals.
-2. Ask Gemini for JSON output matching `CrisisAnalysis`. Antigravity validates the schema.
-3. On Gemini failure / timeout, fall back to a cached `CrisisAnalysis` keyed by `(crisis_type, severity)` — five entries covering the demo scenarios.
+1. Build a structured prompt from the `CrisisEvent` and contributing signal context.
+2. Call Groq for JSON matching `CrisisAnalysis` (5s timeout, one retry).
+3. On LLM failure, timeout, or missing API key, use the in-memory **fallback cache** keyed by `(crisis_type, severity)` covering all demo scenarios.
+4. Responses are cached in `services/cache` for repeat calls within a session.
 
 ### Handoff to Action Planning
 `CrisisAnalysis` JSON passed as `input.analysis`.
