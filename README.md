@@ -1,272 +1,341 @@
-# CIRO – Crisis Intelligence & Response Orchestrator
+# CIRO — Crisis Intelligence & Response Orchestrator
 
-> **An Agentic AI System for real-time urban crisis detection, reasoning, and coordinated response — powered by Google Antigravity & Gemini.**
+> Agentic AI for real-time urban crisis detection, reasoning, and coordinated response — built for the **Google Antigravity Hackathon** (Challenge 3).
 
-[![Google Antigravity Hackathon](https://img.shields.io/badge/Challenge%203-Google%20Antigravity%20Hackathon-blue?style=for-the-badge)]()
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)]()
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?style=flat-square&logo=fastapi&logoColor=white)]()
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white)]()
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?style=flat-square&logo=fastapi&logoColor=white)]()
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=flat-square&logo=flutter&logoColor=white)]()
-[![Gemini](https://img.shields.io/badge/Gemini%201.5%20Pro-AI%20Reasoning-8E75B2?style=flat-square&logo=google&logoColor=white)]()
 
 ---
 
-## Overview
+## What is CIRO?
 
-Pakistan's cities face recurring urban crises — flash floods in G-10, heatwaves in Jacobabad, road blockages on Shahrah-e-Faisal, infrastructure failures on Constitution Avenue. Current response systems are fragmented and reactive.
+Pakistani cities face recurring urban crises — flash floods in G-10, heatwaves in Jacobabad, blockages on Shahrah-e-Faisal, fires in industrial sectors. Response is often fragmented and reactive.
 
-**CIRO** solves this by orchestrating a **5-agent AI pipeline** that:
-1. **Ingests** multi-source signals (social media, weather APIs, traffic data)
-2. **Detects** emerging crises with confidence scoring
-3. **Analyses** situations using Gemini 1.5 Pro for structured reasoning
+**CIRO** runs a **5-agent pipeline** that:
+
+1. **Ingests** multi-source signals (social, weather, traffic — mock + optional live scan)
+2. **Detects** crisis type and severity with confidence scoring
+3. **Reasons** over impact, population, and urgency (Groq LLM with deterministic fallback cache)
 4. **Plans** coordinated response actions
-5. **Simulates** execution and visualises before/after outcomes
+5. **Simulates** execution and surfaces before/after outcomes, tickets, and alerts
 
-All orchestrated through **Google Antigravity** — no manual API chaining required.
+Clients talk to a single **FastAPI** backend. The same endpoints are registered as **Google ADK tools** in `backend/agents/ciro_pipeline.py` for Antigravity orchestration.
 
 ---
 
-## System Architecture
+## Repository layout
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│              ☁ Google Antigravity Orchestration Layer         │
-├──────────┬───────────┬────────────┬────────────┬─────────────┤
-│  Signal  │   Event   │ Reasoning  │   Action   │ Simulation  │
-│ Ingestion│ Detection │   Agent    │  Planning  │   Engine    │
-│  Agent   │   Agent   │ (Gemini)   │   Agent    │   Agent     │
-└────┬─────┴─────┬─────┴──────┬─────┴──────┬─────┴──────┬──────┘
-     │           │            │            │            │
-     ▼           ▼            ▼            ▼            ▼
-  Raw Signals → Crisis    → Analysis  → Action    → Simulated
-  (Social,     Event       (Impact,     Plan        Outcomes
-   Weather,    (Type,       Urgency,    (Reroute,   (Before/
-   Traffic)    Confidence)  Summary)    Dispatch)    After)
+CIRO/
+├── backend/                 # FastAPI API, agents, tests, mock data
+│   ├── main.py              # App entry — mounts routers + /web static
+│   ├── routers/             # Per-agent HTTP handlers
+│   ├── models/              # Pydantic schemas (signal, simulation)
+│   ├── services/            # Trace store, alert broadcast, live scanner
+│   ├── agents/              # Google ADK SequentialAgent (ciro_pipeline.py)
+│   ├── data/                # GeoJSON overlays, mock JSON
+│   ├── tests/               # 139 pytest tests
+│   └── scripts/qa_report.py # Demo scenario matrix (JSON)
+├── web/                     # Operations dashboard (served at /web)
+├── frontend/ciro_app/       # Flutter mobile app (5 screens)
+├── docs/                    # Architecture, API, pipeline contract, QA
+├── Plans/                   # Team sprint plans
+├── .env.example             # Environment template (copy to backend/.env)
+└── start_server.bat         # Windows: uvicorn on 0.0.0.0:8000
 ```
 
 ---
 
-## Technology Stack
+## Quick start
 
-| Layer | Technologies |
-|---|---|
-| **Orchestration** | Google Antigravity, Agent Workflows, Tool-use APIs |
-| **Backend / API** | Python 3.11, FastAPI, Uvicorn, Pydantic |
-| **AI / LLM** | Gemini 1.5 Pro (via Antigravity), Structured Reasoning |
-| **Maps** | Google Maps API (mock GeoJSON), Static Map Tiles |
-| **Weather / Traffic** | Simulated OpenWeatherMap-style JSON, Mock Traffic API |
-| **Mobile App** | Flutter 3.x (Dart), Provider State Management |
-| **Logging / Trace** | Python structlog, Custom Agent Trace Format |
-| **Dev Tools** | Git, GitHub, VS Code, Postman |
+### 1. Backend
 
----
-
-## Agent Pipeline
-
-### 1. Signal Ingestion Agent
-- Ingests raw signals from social media, weather APIs, and traffic feeds
-- **Bilingual support**: detects Urdu and English inputs
-- Extracts locations (Pakistani sectors, named locations)
-- Tags severity using keyword analysis
-- Aggregates signals into `SignalBatch` objects
-
-### 2. Event Detection Agent
-- Receives `SignalBatch`, returns `CrisisEvent`
-- **3 detection heuristics**: keyword clustering, cross-source corroboration, traffic anomaly detection
-- Confidence scoring algorithm (multi-source bonus, severity boost)
-- Severity escalation: `LOW → MEDIUM → HIGH → CRITICAL`
-- Handles 4 crisis types: Flood, Heatwave, Blockage, Accident
-
-### 3. Reasoning & Analysis Agent
-- Powered by **Gemini 1.5 Pro** via Google Antigravity
-- Produces structured JSON analysis: impact bullets, affected population, infrastructure risk, urgency level
-- Includes fallback cache for all demo scenarios
-
-### 4. Action Planning Agent
-- Generates coordinated response actions mapped to crisis type + severity
-- Examples: `reroute_traffic`, `dispatch_rescue_boats`, `send_flood_alert`, `open_relief_camp`
-
-### 5. Simulation Engine Agent
-- Executes all planned actions against a mock system state
-- Tracks before/after snapshots (congestion levels, tickets, alerts)
-- Generates `EmergencyTicket` and `Alert` objects
-- Computes outcome metrics: congestion reduction %, response ETA, alerts dispatched
-
----
-
-## Google Antigravity Integration
-
-> **Antigravity accounts for 25% of the evaluation score.**
-
-| Usage | Description |
-|---|---|
-| **Multi-Agent Orchestration** | Defines the execution graph — which agent runs, in what order, what data it receives |
-| **Tool Integration** | HTTP tools registered per agent (weather, traffic, social APIs) |
-| **LLM Reasoning** | Gemini 1.5 Pro invoked via Antigravity for structured crisis analysis |
-| **State Passing** | Pydantic JSON schemas passed between agents automatically |
-| **Built-in Trace** | Execution traces showing every agent step, tool call, and decision |
-
-### Agent Tool Registration
-
-| Agent | Tools Registered | Trigger |
-|---|---|---|
-| `signal-ingestion` | POST `/ingest/signal`, GET `/mock/social`, `/mock/weather`, `/mock/traffic` | On new signal input |
-| `event-detection` | POST `/detect/crisis` | On SignalBatch ready |
-| `reasoning-analysis` | POST `/reason/analyse`, Gemini 1.5 Pro | On CrisisEvent confirmed |
-| `action-planning` | POST `/plan/actions` | On CrisisAnalysis complete |
-| `simulation` | POST `/simulate/execute`, GET `/maps/crisis-overlay` | On ActionPlan generated |
-
----
-
-## Mobile App (Flutter)
-
-The Flutter app provides 5 screens:
-
-| Screen | Description |
-|---|---|
-| **Home Dashboard** | Before/after command centre with animated state transitions |
-| **Crisis Feed** | Live list of detected crises with severity-coded cards |
-| **Map View** | Google Maps with crisis overlays, blocked/alternate routes, "Run Simulation" button |
-| **Alert Centre** | Dispatched alerts and emergency tickets with status tracking |
-| **Agent Trace** | Vertical stepper showing the complete 5-agent reasoning chain with timing |
-
----
-
-## Web Dashboard
-
-A real-time 2×2 panel web dashboard:
-- **Live Signal Feed** — auto-polls social signals every 4 seconds
-- **Agent Pipeline Status** — animated agent cards (IDLE → RUNNING → COMPLETE)
-- **Crisis Detection** — confidence gauge, severity badge, explanation
-- **Simulation Log** — scrolling log of tickets and alerts
-
-Includes a **"TRIGGER PIPELINE"** button and **"Reset System"** button for demo control.
-
----
-
-## API Endpoints
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| `POST` | `/ingest/signal` | Submit raw signal; returns `SignalBatch` |
-| `POST` | `/detect/crisis` | Detect crisis from signal batch; returns `CrisisEvent` |
-| `POST` | `/reason/analyse` | AI analysis via Gemini; returns `CrisisAnalysis` |
-| `POST` | `/plan/actions` | Generate action plan; returns `ActionPlan` |
-| `POST` | `/simulate/execute` | Execute simulation; returns `SimulationResult` |
-| `POST` | `/simulate/reset` | Reset all mock state to defaults |
-| `GET` | `/simulate/state` | Current mock system state |
-| `GET` | `/simulate/tickets` | List all emergency tickets |
-| `GET` | `/simulate/alerts` | List all sent alerts |
-| `PATCH` | `/simulate/tickets/{id}/status` | Update ticket status |
-| `GET` | `/maps/crisis-overlay` | GeoJSON: crisis pin + affected area + routes |
-| `GET` | `/outcome/summary` | Before/after outcome metrics |
-| `GET` | `/trace/latest` | Full agent trace for most recent run |
-| `GET` | `/trace/history` | Last 10 run summaries |
-| `GET` | `/mock/social` | Random mock social media signal |
-| `GET` | `/mock/weather` | Mock weather alert JSON |
-| `GET` | `/mock/traffic` | Mock traffic congestion data |
-| `GET` | `/health` | System health check |
-
----
-
-## Setup Instructions
-
-### Backend
 ```bash
 git clone https://github.com/shayanop/CIRO.git
 cd CIRO/backend
 python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # macOS/Linux
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-Backend will be available at `http://localhost:8000`. Swagger UI at `http://localhost:8000/docs`.
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+# source venv/bin/activate
 
-### Mobile App (Flutter)
+pip install -r requirements.txt
+cp ../.env.example .env   # optional: GROQ_API_KEY, GEMINI_API_KEY, maps key
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+| URL | Purpose |
+|-----|---------|
+| http://localhost:8000/docs | Swagger UI |
+| http://localhost:8000/web/index.html | Web dashboard |
+| http://localhost:8000/health | Health check |
+
+**Windows shortcut:** run `start_server.bat` from the repo root (prints your LAN IP for the Flutter app).
+
+### 2. Flutter app
+
 ```bash
-cd CIRO/mobile/ciro_app
+cd frontend/ciro_app
 flutter pub get
 flutter run
 ```
 
-### Web Dashboard
-Served automatically from FastAPI at `http://localhost:8000/web` after backend is running.
+- **Android emulator** default backend: `http://10.0.2.2:8000`
+- **Physical device:** set your PC’s Wi‑Fi IP in the app (same network as the backend)
+- Override URL anytime via in-app server settings (`SharedPreferences`)
 
-### Environment Variables
-Create a `.env` file in `/backend`:
-```env
-ANTIGRAVITY_PROJECT_ID=<your-project-id>
-GEMINI_API_KEY=<your-gemini-api-key>
+### 3. Run tests & QA matrix
+
+```bash
+cd backend
+python -m pytest -q
+python scripts/qa_report.py
 ```
 
 ---
 
-## Demo Scenarios
+## Architecture (high level)
 
-| # | Scenario | Input | Expected Output |
-|---|---|---|---|
-| 1 | **Urdu Flood (G-10)** | Urdu text about flooding | FLOOD detected, confidence >0.7, reroute action, map turns green |
-| 2 | **English Heatwave** | English heatwave signal | HEATWAVE detected, cooling centres opened |
-| 3 | **Multi-Source Flood** | Social + weather + traffic signals | CRITICAL severity, confidence >0.85, all 4 flood actions triggered |
-| 4 | **Road Blockage** | Accident signal | BLOCKAGE/ACCIDENT detected, police dispatch ticket created |
-| 5 | **Low Confidence** | Single vague signal | LOW severity, no critical actions triggered |
+```
+                    ┌─────────────────────────────────────┐
+                    │  Clients: Web / Flutter / ADK CLI   │
+                    └──────────────────┬──────────────────┘
+                                       │ REST
+                    ┌──────────────────▼──────────────────┐
+                    │         FastAPI (backend/main.py)    │
+                    ├──────────┬──────────┬──────────┬─────┤
+                    │ Ingest   │ Detect   │ Reason   │ ... │
+                    └────┬─────┴────┬─────┴────┬─────┴─────┘
+                         │          │          │
+              SignalBatch → CrisisEvent → CrisisAnalysis → ActionPlan → SimulationResult
+                         │                              │
+                         └──────── TraceStore ──────────┘
+                                    │
+                         Alert broadcast (SSE + version poll)
+```
+
+**One-shot orchestration:** `POST /pipeline/run` chains all five agents and completes the trace run.
+
+**Live mode:** `POST /pipeline/auto` uses `services/live_scanner.py` (wttr.in + Pakistani RSS) to pick a signal, then runs the pipeline.
+
+Details: [`docs/Architecture.md`](docs/Architecture.md) · [`docs/PIPELINE_CONTRACT.md`](docs/PIPELINE_CONTRACT.md)
 
 ---
 
-## Key Success Metrics
+## Technology stack
 
-| # | Metric | Target |
-|---|---|---|
-| 1 | Antigravity agents configured and firing | 5 / 5 |
-| 2 | Signal types handled (social, weather, traffic) | 3 / 3 |
-| 3 | Crisis types detected (flood, heat, blockage, accident) | 4 / 4 |
-| 4 | Confidence scoring on multi-source scenarios | ≥ 0.80 |
-| 5 | Action types simulated | 4 / 4 |
-| 6 | Mobile app screens complete | 5 / 5 |
-| 7 | Agent trace steps per run | 5 / 5 |
-| 8 | API endpoint response time | < 500ms |
-| 9 | Demo video duration | 3–5 min |
-| 10 | E2E test scenarios passing | 5 / 5 |
+| Layer | Stack |
+|-------|--------|
+| API | Python 3.11+, FastAPI, Pydantic v2, Uvicorn |
+| Reasoning | Groq (`llama-3.3-70b-versatile`) + per-scenario fallback cache |
+| Orchestration (hackathon) | Google ADK `SequentialAgent` → FastAPI tools |
+| Maps | File-backed GeoJSON overlays + optional Google Static Maps URL |
+| Logging / trace | structlog + in-memory `TraceStore` |
+| Web UI | Vanilla JS, Leaflet/OSM, SSE alert stream |
+| Mobile | Flutter 3, Provider, `http` client |
+| Tests | pytest (139 tests), `scripts/qa_report.py` |
 
 ---
 
-## Assumptions
+## The five agents
 
-- All weather, traffic, and social media data is **simulated/mock** for the hackathon scope.
-- Google Maps API calls use **pre-saved GeoJSON** to avoid quota issues.
-- Gemini responses are **cached** for all 5 demo scenarios as fallback.
-- The mobile app targets **Android** as the primary demo platform.
-- All agents communicate via **REST API** endpoints orchestrated through Antigravity.
+| # | Agent | Endpoint | Output |
+|---|--------|----------|--------|
+| 1 | Signal Ingestion | `POST /ingest/signal` | `SignalBatch` |
+| 2 | Event Detection | `POST /detect/crisis` | `CrisisEvent` |
+| 3 | Reasoning & Analysis | `POST /reason/analyse` | `CrisisAnalysis` |
+| 4 | Action Planning | `POST /plan/actions` | `ActionPlan` |
+| 5 | Simulation Engine | `POST /simulate/execute` | `SimulationResult` |
+
+**Crisis types (8):** `flood`, `heatwave`, `blockage`, `accident`, `fire`, `earthquake`, `storm`, `infrastructure`
+
+**Severity ladder** (`confidence_to_severity`):
+
+| Confidence ≥ | Severity |
+|--------------|----------|
+| 0.75 | critical |
+| 0.55 | high |
+| 0.35 | medium |
+| &lt; 0.35 | low |
+
+Detection uses keyword clustering, cross-source corroboration, engagement/location bonuses, and optional escalation when prior events exist in the buffer.
+
+---
+
+## API overview
+
+Full reference: [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md)
+
+### Pipeline & ingest
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/pipeline/run` | Full 5-agent run from one raw signal |
+| `POST` | `/pipeline/auto` | Live scan → highest-severity signal → pipeline |
+| `POST` | `/ingest/signal` | Normalise one signal into batch |
+| `POST` | `/ingest/auto` | Auto-ingest mock weather + traffic (capped, location-aware) |
+| `POST` | `/ingest/clear` | Clear signal buffer |
+
+### Simulation & real-time alerts
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/simulate/execute` | Execute action plan |
+| `POST` | `/simulate/reset` | Reset world state |
+| `GET` | `/simulate/state` | Current mock system state |
+| `GET` | `/simulate/tickets` | Emergency tickets (JSON array) |
+| `GET` | `/simulate/alerts` | Sent alerts (JSON array) |
+| `GET` | `/simulate/alerts/version` | Version + counts for polling |
+| `GET` | `/simulate/alerts/stream` | SSE stream (`?once=true` for single event) |
+| `PATCH` | `/simulate/tickets/{id}/status` | Update ticket (`{"status":"..."}` or query param) |
+
+### Maps, outcome, trace, mocks
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/maps/crisis-overlay` | GeoJSON pin, polygon, routes |
+| `GET` | `/maps/static-map` | Google Static Maps URL |
+| `GET` | `/maps/routes` | Alternate route library |
+| `GET` | `/outcome/summary` | Before/after metrics |
+| `GET` | `/trace/latest` | Full steps for latest run |
+| `GET` | `/trace/history` | Last 10 runs (enriched summaries + steps) |
+| `GET` | `/mock/social` | Random mock social signal |
+| `GET` | `/mock/weather` | Mock weather JSON |
+| `GET` | `/mock/traffic` | Mock traffic JSON |
+| `GET` | `/health` | Service health |
+
+---
+
+## Web dashboard
+
+Served at **`/web/index.html`** when the backend is running.
+
+| Section | Behaviour |
+|---------|-----------|
+| Live Signal Feed | Polls `/mock/social`; shows engagement when present |
+| Agent Pipeline | Animated IDLE → RUNNING → COMPLETE per agent |
+| Crisis Detection | Confidence gauge, severity, explanation |
+| Simulation Log | Tickets and alerts |
+| Outcome Snapshot | Congestion, ETA, alerts, tickets |
+| Live Map | Leaflet + crisis GeoJSON overlay |
+| Agent Trace | Expandable stepper from `/trace/latest` |
+| Controls | **Trigger Pipeline** (`POST /pipeline/run`), **Reset** |
+
+**Real-time alerts:** `EventSource` on `/simulate/alerts/stream` with 2s polling fallback via `/simulate/alerts/version`.
+
+---
+
+## Flutter app (`frontend/ciro_app`)
+
+Five bottom-nav screens:
+
+| Screen | Features |
+|--------|----------|
+| **Home** | Before/after command centre, run pipeline FAB, outcome summary |
+| **Crisis** | Trace history feed with severity-coded cards |
+| **Map** | Crisis overlay, routes, run pipeline |
+| **Alerts** | Tickets + alerts, badge on new dispatches |
+| **Trace** | 5-step agent stepper with timings |
+
+Polls **`/simulate/alerts/version` every 2s** and refreshes tickets/alerts when the version changes.
+
+See [`frontend/ciro_app/README.md`](frontend/ciro_app/README.md).
+
+---
+
+## Google Antigravity / ADK
+
+`backend/agents/ciro_pipeline.py` defines a **SequentialAgent** whose tools call the same FastAPI endpoints as the web and mobile clients.
+
+```bash
+cd backend
+# Ensure BACKEND_URL=http://localhost:8000 in .env and server is running
+adk web agents    # browser UI
+adk run agents    # CLI
+```
+
+Set `GEMINI_API_KEY` / `GOOGLE_CLOUD_PROJECT` for ADK LLM steps; set `GROQ_API_KEY` for the Reasoning agent’s direct API path.
+
+---
+
+## Environment variables
+
+Copy [`.env.example`](.env.example) to **`backend/.env`**:
+
+```env
+GROQ_API_KEY=              # Reasoning agent (optional — cache fallback)
+GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_TIMEOUT_SECONDS=5
+
+GEMINI_API_KEY=            # ADK / Antigravity
+GOOGLE_CLOUD_PROJECT=
+ANTIGRAVITY_PROJECT_ID=
+
+GOOGLE_MAPS_API_KEY=       # Static map URLs only
+BACKEND_URL=http://localhost:8000
+```
+
+Without API keys, demo scenarios still pass using the **reasoning fallback cache** and mock data.
+
+---
+
+## Demo scenarios
+
+| # | Scenario | Sample input | Expected |
+|---|----------|--------------|----------|
+| 1 | Urdu flood G-10 | `G-10 mein pani bhar gaya hai, gaariyan phans gayi hain` | `flood`, confidence ≥ 0.70, high/critical |
+| 2 | English heatwave | `48 degrees in Jacobabad, people collapsing` | `heatwave`, high/critical |
+| 3 | Shahrah blockage | `Shahrah-e-Faisal completely jammed after truck accident` | `blockage`, high+ |
+| 4 | Fire I-9 | `Fire broke out in I-9 industrial area, smoke everywhere` | `fire`, high, alerts |
+| 5 | Low confidence | `some news from somewhere today` | `low`, no critical actions |
+| 6 | Multi-source (buffer) | Social + weather + traffic via `/ingest/auto` | `critical`, confidence ≥ 0.85 |
+
+Demo walkthrough: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md)
+
+---
+
+## Quality metrics
+
+| Metric | Value |
+|--------|-------|
+| Automated tests | **139** (`pytest` in `backend/`) |
+| Typical test runtime | ~2 s |
+| Full pipeline latency | &lt; 30 ms typical (in-process, cached reasoning) |
+| QA script | `python backend/scripts/qa_report.py` |
+
+See [`docs/QA_METRICS.md`](docs/QA_METRICS.md).
+
+---
+
+## Documentation index
+
+| Document | Description |
+|----------|-------------|
+| [`docs/Architecture.md`](docs/Architecture.md) | Layers, data flow, component ownership |
+| [`docs/AgentDesign.md`](docs/AgentDesign.md) | Per-agent schemas and decision logic |
+| [`docs/PIPELINE_CONTRACT.md`](docs/PIPELINE_CONTRACT.md) | JSON contracts for pipeline I/O |
+| [`docs/API_REFERENCE.md`](docs/API_REFERENCE.md) | Endpoint reference with examples |
+| [`docs/QA_METRICS.md`](docs/QA_METRICS.md) | Test counts, thresholds, alert mechanisms |
+| [`docs/Assumptions.md`](docs/Assumptions.md) | Mock boundaries and demo caveats |
+| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | 3–5 minute demo script |
+| [`Plans/`](Plans/) | Team sprint plans (implementation + final sprint) |
 
 ---
 
 ## Team
 
 | Name | Role |
-|---|---|
-| **Anas Bin Rashid** | Lead Engineer – Antigravity & Signal Ingestion |
-| **Hasnain Akhtar** | AI Engineer – Event Detection & Maps |
-| **Arshman Khawar** | Backend Dev – Reasoning & Simulation |
-| **M Saad Mursaleen** | Mobile Dev – Flutter App & UX |
-| **Shayan Ahmed** | Systems Dev – Logging, Docs & Demo |
-
----
-
-## Documentation
-
-- [`Plans/CIRO_Implementation_Plan_5_Days.md`](Plans/CIRO_Implementation_Plan_5_Days.md) – 5-Day Sprint Plan
-- `docs/ARCHITECTURE.md` – System Architecture
-- `docs/AGENT_DESIGN.md` – Agent Design Specifications
-- `docs/API_REFERENCE.md` – Full API Documentation
-- `docs/ASSUMPTIONS.md` – Project Assumptions & Boundaries
-- `docs/DEMO_SCRIPT.md` – Demo Video Script
-- `docs/sample_trace.json` – Sample Agent Trace Output
+|------|------|
+| **Anas Bin Rashid** | Lead — ingestion, simulation, integration, Antigravity |
+| **Hasnain Akhtar** | Detection, maps, web dashboard |
+| **Arshman Khawar** | Reasoning, mocks, backend |
+| **M Saad Mursaleen** | Flutter app & UX |
+| **Shayan Ahmed** | Trace, docs, demo |
 
 ---
 
 <p align="center">
-  <b>CIRO – Crisis Intelligence & Response Orchestrator</b><br>
+  <b>CIRO — Crisis Intelligence & Response Orchestrator</b><br>
   Challenge 3 · Google Antigravity Hackathon
 </p>
-
-<p lets see where we can go >
