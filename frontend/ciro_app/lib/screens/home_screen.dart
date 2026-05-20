@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/app_state.dart';
+import '../services/config.dart';
+import '../services/api_client.dart';
 import '../models/models.dart';
 import '../theme.dart';
 import '../widgets/bilingual_input.dart';
@@ -97,6 +99,10 @@ class _HomeScreenState extends State<HomeScreen>
                   icon: const Icon(Icons.restart_alt_rounded, color: Colors.white38),
                   tooltip: 'Reset',
                   onPressed: () => _confirmReset(context)),
+              IconButton(
+                  icon: const Icon(Icons.settings_ethernet_rounded, color: Colors.white38),
+                  tooltip: 'Server Settings',
+                  onPressed: () => _showServerSettings(context)),
               const SizedBox(width: 4),
             ],
           ),
@@ -190,6 +196,109 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
     if (ok == true && ctx.mounted) ctx.read<AppState>().resetAll();
+  }
+
+  Future<void> _showServerSettings(BuildContext ctx) async {
+    final ctrl = TextEditingController(text: Config.baseUrl);
+    String? statusMsg;
+    Color statusColor = kAccent;
+    bool testing = false;
+
+    await showDialog(
+      context: ctx,
+      builder: (dCtx) => StatefulBuilder(
+        builder: (dCtx, setS) => AlertDialog(
+          backgroundColor: kCard,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Server Connection',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Backend URL',
+                  style: TextStyle(color: Colors.white38, fontSize: 11, letterSpacing: 1)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: ctrl,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'http://192.168.x.x:8000',
+                  hintStyle: const TextStyle(color: Colors.white24),
+                  filled: true,
+                  fillColor: kSurface,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: kCardBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: kCardBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: kPrimary),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Emulator: http://10.0.2.2:8000\nPhysical device: http://<your-PC-IP>:8000',
+                style: TextStyle(color: Colors.white24, fontSize: 10, height: 1.5),
+              ),
+              if (statusMsg != null) ...[
+                const SizedBox(height: 10),
+                Row(children: [
+                  Icon(
+                    statusColor == kAccent ? Icons.check_circle_rounded : Icons.error_rounded,
+                    color: statusColor, size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(statusMsg!,
+                      style: TextStyle(color: statusColor, fontSize: 12))),
+                ]),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: testing ? null : () async {
+                setS(() { testing = true; statusMsg = 'Testing…'; statusColor = Colors.white38; });
+                try {
+                  await Config.setBaseUrl(ctrl.text.trim());
+                  final res = await ApiClient.health().timeout(const Duration(seconds: 5));
+                  setS(() {
+                    testing = false;
+                    statusMsg = 'Connected! v${res['version'] ?? '?'}';
+                    statusColor = kAccent;
+                  });
+                } catch (e) {
+                  setS(() {
+                    testing = false;
+                    statusMsg = 'Failed: ${e.toString().replaceAll('Exception: ', '')}';
+                    statusColor = kDanger;
+                  });
+                }
+              },
+              child: testing
+                  ? const SizedBox(width: 14, height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: kPrimary))
+                  : const Text('TEST', style: TextStyle(color: kPrimary)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await Config.setBaseUrl(ctrl.text.trim());
+                if (dCtx.mounted) Navigator.pop(dCtx);
+                if (ctx.mounted) ctx.read<AppState>().checkHealth();
+              },
+              child: const Text('SAVE'),
+            ),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
   }
 }
 

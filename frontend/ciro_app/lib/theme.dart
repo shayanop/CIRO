@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 // ── Colour palette ──────────────────────────────────────────────────────────
-const kPrimary   = Color(0xFF00D4FF); // cyan
-const kSecondary = Color(0xFF7B2FBE); // purple
-const kAccent    = Color(0xFF00FF9D); // neon green
-const kDanger    = Color(0xFFFF3B5C); // alarm red
-const kWarning   = Color(0xFFFFAA00); // amber
-const kBg        = Color(0xFF060A14); // near-black
-const kSurface   = Color(0xFF0F1628); // dark navy
-const kCard      = Color(0xFF161D33); // card bg
-const kCardBorder= Color(0xFF1E2A45); // subtle border
+const kPrimary    = Color(0xFF00D4FF);
+const kSecondary  = Color(0xFF7B2FBE);
+const kAccent     = Color(0xFF00FF9D);
+const kDanger     = Color(0xFFFF3B5C);
+const kWarning    = Color(0xFFFFAA00);
+const kBg         = Color(0xFF060A14);
+const kSurface    = Color(0xFF0F1628);
+const kCard       = Color(0xFF161D33);
+const kCardBorder = Color(0xFF1E2A45);
 
 // ── Severity colours ─────────────────────────────────────────────────────────
 const severityColors = <String, Color>{
@@ -29,16 +28,16 @@ const agentColors = <String, Color>{
   'simulate': Color(0xFF10B981),
 };
 
-// ── Crisis icon colours ───────────────────────────────────────────────────────
+// ── Crisis type colours ───────────────────────────────────────────────────────
 const crisisColors = <String, Color>{
-  'flood'          : Color(0xFF38BDF8),
-  'heatwave'       : Color(0xFFF97316),
-  'blockage'       : Color(0xFFFBBF24),
-  'accident'       : Color(0xFFEF4444),
-  'infrastructure' : Color(0xFF94A3B8),
-  'fire'           : Color(0xFFEF4444),
-  'earthquake'     : Color(0xFFA78BFA),
-  'storm'          : Color(0xFF60A5FA),
+  'flood'         : Color(0xFF38BDF8),
+  'heatwave'      : Color(0xFFF97316),
+  'blockage'      : Color(0xFFFBBF24),
+  'accident'      : Color(0xFFEF4444),
+  'infrastructure': Color(0xFF94A3B8),
+  'fire'          : Color(0xFFEF4444),
+  'earthquake'    : Color(0xFFA78BFA),
+  'storm'         : Color(0xFF60A5FA),
 };
 
 // ── Glassmorphism helper ──────────────────────────────────────────────────────
@@ -49,9 +48,11 @@ BoxDecoration glassDecoration({Color? borderColor, double opacity = 0.08}) =>
       border: Border.all(color: borderColor ?? kCardBorder, width: 1),
     );
 
+// ── Theme ─────────────────────────────────────────────────────────────────────
 ThemeData ciroTheme() => ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: kBg,
+      fontFamily: 'Roboto',
       colorScheme: const ColorScheme.dark(
         primary:    kPrimary,
         secondary:  kSecondary,
@@ -60,24 +61,25 @@ ThemeData ciroTheme() => ThemeData(
         error:      kDanger,
       ),
       cardColor: kCard,
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme).copyWith(
-        displayLarge : GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w800),
-        headlineMedium: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.w700),
-        titleMedium  : GoogleFonts.inter(color: Colors.white70),
-        bodyMedium   : GoogleFonts.inter(color: Colors.white60, fontSize: 13),
-        labelSmall   : GoogleFonts.inter(color: Colors.white38, fontSize: 10, letterSpacing: 1.2),
+      textTheme: const TextTheme(
+        displayLarge  : TextStyle(color: Colors.white,   fontWeight: FontWeight.w800),
+        headlineMedium: TextStyle(color: Colors.white,   fontWeight: FontWeight.w700),
+        titleMedium   : TextStyle(color: Colors.white70),
+        bodyMedium    : TextStyle(color: Colors.white60, fontSize: 13),
+        labelSmall    : TextStyle(color: Colors.white38, fontSize: 10, letterSpacing: 1.2),
       ),
-      appBarTheme: AppBarTheme(
+      appBarTheme: const AppBarTheme(
         backgroundColor: kBg,
         elevation: 0,
         centerTitle: false,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
           color: kPrimary,
           fontSize: 20,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.8,
+          fontFamily: 'Roboto',
         ),
-        iconTheme: const IconThemeData(color: Colors.white70),
+        iconTheme: IconThemeData(color: Colors.white70),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: kSurface,
@@ -90,22 +92,23 @@ ThemeData ciroTheme() => ThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: kPrimary,
           foregroundColor: kBg,
-          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
+          textStyle: const TextStyle(
+              fontWeight: FontWeight.w700, fontSize: 13, fontFamily: 'Roboto'),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       ),
-      chipTheme: ChipThemeData(
+      chipTheme: const ChipThemeData(
         backgroundColor: kCard,
-        labelStyle: GoogleFonts.inter(color: Colors.white70, fontSize: 11),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        labelStyle: TextStyle(color: Colors.white70, fontSize: 11),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       ),
-      dividerColor: Colors.white.withOpacity(0.06),
+      dividerColor: Color(0x0FFFFFFF),
       cardTheme: CardTheme(
         color: kCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: kCardBorder, width: 1),
+          side: const BorderSide(color: kCardBorder, width: 1),
         ),
         margin: EdgeInsets.zero,
       ),

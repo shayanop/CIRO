@@ -233,7 +233,7 @@ class _CrisisCard extends StatelessWidget {
                   const Text('Tap for full analysis',
                       style: TextStyle(color: kPrimary, fontSize: 11)),
                   const Spacer(),
-                  Text('${steps.length} agent steps',
+                  Text('${(run['steps'] as List? ?? []).length} agent steps',
                       style: const TextStyle(
                           color: Colors.white24, fontSize: 11)),
                 ],
