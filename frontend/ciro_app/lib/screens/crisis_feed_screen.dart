@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/api_client.dart';
+import '../services/app_state.dart';
 import '../theme.dart';
 
 const _crisisIcons = {
@@ -26,12 +28,23 @@ class _CrisisFeedScreenState extends State<CrisisFeedScreen> {
   bool _loading = true;
   bool _hasError = false;
   Timer? _timer;
+  Object? _lastPipelineResult;
 
   @override
   void initState() {
     super.initState();
     _fetch();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) => _fetch());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final result = context.watch<AppState>().lastPipelineResult;
+    if (result != null && !identical(result, _lastPipelineResult)) {
+      _lastPipelineResult = result;
+      _fetch();
+    }
   }
 
   @override

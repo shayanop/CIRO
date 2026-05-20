@@ -41,15 +41,18 @@ ACTION_RULES = {
     ("heatwave", "high"): [
         ("send_heat_advisory", 1),
         ("open_cooling_centres", 2),
-        ("restrict_outdoor_activity", 3),
+        ("dispatch_ambulance", 3),
+        ("restrict_outdoor_activity", 4),
     ],
     ("heatwave", "critical"): [
         ("send_heat_advisory", 1),
         ("open_cooling_centres", 2),
-        ("restrict_outdoor_activity", 3),
+        ("dispatch_ambulance", 3),
+        ("restrict_outdoor_activity", 4),
     ],
     ("heatwave", "medium"): [
         ("send_heat_advisory", 1),
+        ("open_cooling_centres", 2),
     ],
     ("heatwave", "low"): [],
     ("blockage", "high"): [

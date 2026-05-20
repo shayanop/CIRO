@@ -19,7 +19,7 @@ preserved end-to-end and the run is marked complete at the end.
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from models.signal import (
@@ -96,3 +96,21 @@ async def run_pipeline(raw: RawSignalInput):
         simulation=simulation,
         total_duration_ms=total_duration,
     )
+
+
+@router.post("/auto", response_model=PipelineResult, summary="Auto-scan live signals and run pipeline")
+async def run_pipeline_auto():
+    """Scan live Pakistani weather and news, pick the highest-severity signal,
+    and run the full 5-agent pipeline on it automatically.
+
+    Sources: wttr.in (real temperatures) → Dawn/ARY RSS headlines →
+    season-aware fallback.  Always returns a result.
+    """
+    from services.live_scanner import scan_live_signals
+
+    signals = scan_live_signals(max_signals=3)
+    if not signals:
+        raise HTTPException(status_code=503, detail="No live signals found")
+
+    # Run the pipeline on the most severe signal found
+    return await run_pipeline(signals[0])

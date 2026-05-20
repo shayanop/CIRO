@@ -23,14 +23,14 @@ class ApiClient {
   }
 
   static Future<Map<String, dynamic>> _post(
-      String path, Map<String, dynamic> body) async {
+      String path, Map<String, dynamic> body, {Duration timeout = const Duration(seconds: 15)}) async {
     final res = await http
         .post(
           Uri.parse('$baseUrl$path'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
-        .timeout(const Duration(seconds: 15));
+        .timeout(timeout);
     if (res.statusCode >= 400) {
       throw Exception('POST $path → ${res.statusCode}: ${res.body}');
     }
@@ -57,6 +57,12 @@ class ApiClient {
   // Pipeline
   static Future<PipelineResult> runPipeline(RawSignalInput input) async {
     final j = await _post('/pipeline/run', input.toJson());
+    return PipelineResult.fromJson(j);
+  }
+
+  static Future<PipelineResult> runPipelineAuto() async {
+    final j = await _post('/pipeline/auto', {},
+        timeout: const Duration(seconds: 90));
     return PipelineResult.fromJson(j);
   }
 

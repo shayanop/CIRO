@@ -93,6 +93,10 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             actions: [
               IconButton(
+                  icon: const Icon(Icons.radar_rounded, color: kAccent),
+                  tooltip: 'Auto Scan Live Signals',
+                  onPressed: state.isPipelineRunning ? null : () => _runAutoScan(context)),
+              IconButton(
                   icon: const Icon(Icons.refresh_rounded, color: Colors.white54),
                   onPressed: () => context.read<AppState>().refreshAll()),
               IconButton(
@@ -196,6 +200,51 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
     if (ok == true && ctx.mounted) ctx.read<AppState>().resetAll();
+  }
+
+  Future<void> _runAutoScan(BuildContext ctx) async {
+    ScaffoldMessenger.of(ctx).showSnackBar(
+      SnackBar(
+        content: const Row(children: [
+          SizedBox(width: 18, height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: kBg)),
+          SizedBox(width: 12),
+          Text('Scanning live Pakistani signals…'),
+        ]),
+        backgroundColor: kSurface,
+        duration: const Duration(seconds: 30),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    try {
+      final result = await ctx.read<AppState>().runPipelineAuto();
+      if (!ctx.mounted) return;
+      ScaffoldMessenger.of(ctx).hideCurrentSnackBar();
+      if (result != null) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Live signal: ${result.event.crisisType.toUpperCase()} at ${result.event.location}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: kAccent.withOpacity(0.9),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!ctx.mounted) return;
+      ScaffoldMessenger.of(ctx).hideCurrentSnackBar();
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        SnackBar(
+          content: Text('Auto scan failed: $e'),
+          backgroundColor: kDanger,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Future<void> _showServerSettings(BuildContext ctx) async {

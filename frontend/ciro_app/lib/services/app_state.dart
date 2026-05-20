@@ -96,6 +96,25 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<PipelineResult?> runPipelineAuto() async {
+    isPipelineRunning = true;
+    error = null;
+    notifyListeners();
+    try {
+      final result = await ApiClient.runPipelineAuto();
+      lastPipelineResult = result;
+      isPipelineRunning = false;
+      notifyListeners();
+      await refreshAll();
+      return result;
+    } catch (e) {
+      error = e.toString();
+      isPipelineRunning = false;
+      notifyListeners();
+      return null;
+    }
+  }
+
   // ── Full Refresh ─────────────────────────────────────────────────────────
 
   Future<void> refreshAll() async {
