@@ -59,6 +59,9 @@ async def run_pipeline(raw: RawSignalInput):
     plus the trace ``run_id``.  Trace logging happens at each stage so
     ``GET /trace/latest`` will show all five steps after this returns.
     """
+    # Clear stale signals so this run's crisis type isn't contaminated by previous runs
+    ingest_router._signal_buffer.clear()
+
     # 1. Ingestion
     batch: SignalBatch = await ingest_router.ingest_signal(raw)
 
